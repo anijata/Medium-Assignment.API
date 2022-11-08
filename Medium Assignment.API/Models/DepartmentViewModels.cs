@@ -21,17 +21,12 @@ namespace Medium_Assignment.API.Models
         [Required]
         public string Name { get; set; }
 
-        [Required]
-        public int OrganizationId { get; set; }
     }
 
-    public class DepartmentNewViewModel
+    public class DepartmentPostViewModel
     {
         [Required]
         public string Name { get; set; }
-
-        [Required] 
-        public int OrganizationId { get; set; }
     }
 
     public class DepartmentPutViewModel

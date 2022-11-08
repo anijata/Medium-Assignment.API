@@ -78,6 +78,7 @@ namespace Medium_Assignment.API.Controllers
                     Id = employee.Id,
                     FirstName = employee.FirstName,
                     LastName = employee.LastName,
+                    DisplayName = employee.DisplayName,
                     Email = employee.ApplicationUser.Email,
                     PhoneNumber = employee.ApplicationUser.PhoneNumber,
                     Address1 = employee.Address1,
@@ -135,6 +136,7 @@ namespace Medium_Assignment.API.Controllers
                 Id = employee.Id,
                 FirstName = employee.FirstName,
                 LastName = employee.LastName,
+                DisplayName = employee.DisplayName,
                 Email = employee.ApplicationUser.Email,
                 PhoneNumber = employee.ApplicationUser.PhoneNumber,
                 Address1 = employee.Address1,
@@ -163,7 +165,7 @@ namespace Medium_Assignment.API.Controllers
 
         // POST api/employees
         [HttpPost]
-        public async Task<IHttpActionResult> Post(EmployeeNewViewModel model)
+        public async Task<IHttpActionResult> Post(EmployeePostViewModel model)
         {
             if (!ModelState.IsValid)
                 return BadRequest();
@@ -199,7 +201,7 @@ namespace Medium_Assignment.API.Controllers
                 DOB = model.DOB,
                 DOJ = model.DOJ,
                 Status = model.Status,
-                OrganizationId = model.OrganizationId,
+                OrganizationId = organization.Id,
                 EmployeeType = model.EmployeeType,
                 Gender = model.Gender,
                 CreatedBy = currentUserId,

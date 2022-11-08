@@ -56,18 +56,50 @@ namespace Medium_Assignment.API.Controllers
                 .Where(c => !c.IsDeleted && c.ApplicationUserId.Equals(currentUserId))
                 .SingleOrDefault();
 
-            var review = DbContext.Reviews
+            var reviews = DbContext.Reviews
                 .Where(c => !c.IsDeleted && c.OrganizationId == c.OrganizationId)
                 .Include(c => c.Employee)
                 .Include(c => c.Reviewer)
                 .Include(c => c.ReviewStatus)
-                .SingleOrDefault();
+                .ToList();
 
-            return BadRequest();
+            var model = new ReviewListViewModel {
+                reviews = new List<ReviewGetViewModel>()
+            
+            };
+
+            foreach (var review in reviews) { 
+                var getModel = new ReviewGetViewModel
+                {
+                    Id = review.Id,
+                    Agenda = review.Agenda,
+                    Description = review.Description,
+                    EmployeeId = review.EmployeeId ?? 0,
+                    Employee = (review.Employee == null) ? "" :  $"{review.Employee.FirstName}, {review.Employee.LastName}",
+                    Feedback = review.Feedback,
+                    MaxRate = review.MaxRate,
+                    MinRate = review.MinRate,
+                    OrganizationId = review.OrganizationId,
+                    Rating = review.Rating,
+                    ReviewCycleStartDate = review.ReviewCycleStartDate,
+                    ReviewCycleEndDate = review.ReviewCycleStartDate,
+                    Reviewer = (review.Reviewer == null) ? "" : $"{review.Reviewer.FirstName}, {review.Reviewer.LastName}",
+                    ReviewerId = review.ReviewerId ?? 0,
+                    ReviewStatus = review.ReviewStatus.Name,
+                    ReviewStatusId = review.ReviewStatusId
+
+                };
+
+                
+
+                model.reviews.Add(getModel);
+            }
+
+            return Ok(model);
 
         }
 
-        // GET api/reviews/5
+        // GET api/reviews/{id}
         public IHttpActionResult Get(int id)
         {
 
@@ -77,17 +109,21 @@ namespace Medium_Assignment.API.Controllers
                 .SingleOrDefault();
 
             var review = DbContext.Reviews
-                .Where(c => !c.IsDeleted && c.OrganizationId == c.OrganizationId)
+                .Where(c => c.Id == id && !c.IsDeleted && c.OrganizationId == c.OrganizationId)
                 .Include(c => c.Employee)
                 .Include(c => c.Reviewer)
                 .Include(c => c.ReviewStatus)
                 .SingleOrDefault();
 
+            if (review == null)
+                return BadRequest();
+
             var model = new ReviewGetViewModel {
+                Id = id,
                 Agenda = review.Agenda,
                 Description = review.Description,
-                EmployeeId = review.EmployeeId,
-                Employee = review.Employee.DisplayName,
+                EmployeeId = review.EmployeeId ?? 0,
+                Employee = (review.Employee == null) ? "" : $"{review.Employee.FirstName}, {review.Employee.LastName}",
                 Feedback = review.Feedback,
                 MaxRate = review.MaxRate,
                 MinRate = review.MinRate,
@@ -95,22 +131,21 @@ namespace Medium_Assignment.API.Controllers
                 Rating = review.Rating,
                 ReviewCycleStartDate = review.ReviewCycleStartDate,
                 ReviewCycleEndDate = review.ReviewCycleStartDate,
-                Reviewer = review.Reviewer.DisplayName,
-                ReviewerId = review.ReviewerId,
+                Reviewer = (review.Reviewer == null) ? "" : $"{review.Reviewer.FirstName}, {review.Reviewer.LastName}",
+                ReviewerId = review.ReviewerId ?? 0,
                 ReviewStatus = review.ReviewStatus.Name,
                 ReviewStatusId = review.ReviewStatusId
 
             };
 
-            DbContext.Reviews.Add(review);
-
-            DbContext.SaveChanges();
 
             return Ok(model);
         }
 
         // POST api/reviews
-        public IHttpActionResult Post(ReviewNewViewModel model)
+        [Route("api/reviews/new")]
+        [HttpPost]
+        public IHttpActionResult NewReview(ReviewNewViewModel viewModel)
         {
             if (!ModelState.IsValid)
                 return BadRequest();
@@ -123,14 +158,17 @@ namespace Medium_Assignment.API.Controllers
             if (organization == null)
                 return BadRequest();
 
-            var review = new Review { 
-            
-                Agenda = model.Agenda,
-                Description = model.Description,
-                ReviewCycleStartDate = model.ReviewCycleStartDate,
-                ReviewCycleEndDate = model.ReviewCycleEndDate,
-                MinRate = model.MinRate,
-                MaxRate = model.MaxRate,
+            var review = new Review
+            {
+                EmployeeId = null,
+                ReviewerId = null,
+                ReviewStatusId = 1,
+                Agenda = viewModel.Agenda,
+                Description = viewModel.Description,
+                ReviewCycleStartDate = viewModel.ReviewCycleStartDate,
+                ReviewCycleEndDate = viewModel.ReviewCycleEndDate,
+                MinRate = viewModel.MinRate,
+                MaxRate = viewModel.MaxRate,
                 OrganizationId = organization.Id,
                 CreatedBy = currentUserId,
                 CreatedOn = DateTime.Now,
@@ -139,11 +177,93 @@ namespace Medium_Assignment.API.Controllers
 
             };
 
+            DbContext.Reviews.Add(review);
+
+            DbContext.SaveChanges();
+
             return Ok();
         }
-        // PUT api/reviews/5
-        public void Put(int id, [FromBody] string value)
-        {
+
+        [HttpPut]
+        [Route("api/reviews/assign/{id}")]
+        public IHttpActionResult AssignReview(int id, ReviewAssignBindingModel bindModel) {
+            var currentUserId = User.Identity.GetUserId();
+            var organization = DbContext.Organizations
+                .Where(c => !c.IsDeleted && c.ApplicationUserId.Equals(currentUserId))
+                .SingleOrDefault();
+
+            var review = DbContext.Reviews
+                .Where(c => c.Id == id &&  !c.IsDeleted && c.OrganizationId == c.OrganizationId)
+                .Include(c => c.Employee)
+                .Include(c => c.Reviewer)
+                .Include(c => c.ReviewStatus)
+                .SingleOrDefault();
+
+            if (review == null)
+                return BadRequest();
+
+            review.ReviewerId = bindModel.ReviewerId;
+            review.EmployeeId = bindModel.EmployeeIds.First();
+            review.ReviewStatusId = 2;
+            review.ModifiedBy = currentUserId;
+            review.ModifiedOn = DateTime.Now;
+
+            foreach (var employeeId in bindModel.EmployeeIds.Skip(1)) {
+                var newReview = new Review
+                {
+                    EmployeeId = employeeId,
+                    ReviewerId = bindModel.ReviewerId,
+                    ReviewStatusId = 2,
+                    Agenda = review.Agenda,
+                    Description = review.Description,
+                    ReviewCycleStartDate = review.ReviewCycleStartDate,
+                    ReviewCycleEndDate = review.ReviewCycleEndDate,
+                    MinRate = review.MinRate,
+                    MaxRate = review.MaxRate,
+                    OrganizationId = organization.Id,
+                    CreatedBy = currentUserId,
+                    CreatedOn = DateTime.Now,
+                    ModifiedBy = currentUserId,
+                    ModifiedOn = DateTime.Now
+
+                };
+
+                DbContext.Reviews.Add(newReview);
+            }
+
+            DbContext.SaveChanges();
+
+            return Ok();
+        }
+
+        
+        [HttpPut]
+        [Route("api/reviews/submit/{id}")]
+        public IHttpActionResult SubmitReview(int id, ReviewSubmitBindingModel bindModel) {
+            var currentUserId = User.Identity.GetUserId();
+            var organization = DbContext.Organizations
+                .Where(c => !c.IsDeleted && c.ApplicationUserId.Equals(currentUserId))
+                .SingleOrDefault();
+
+            var review = DbContext.Reviews
+                .Where(c => c.Id == id && !c.IsDeleted && c.OrganizationId == c.OrganizationId)
+                .Include(c => c.Employee)
+                .Include(c => c.Reviewer)
+                .Include(c => c.ReviewStatus)
+                .SingleOrDefault();
+
+            if (review == null)
+                return BadRequest();
+
+            review.Feedback = bindModel.Feedback;
+            review.Rating = bindModel.Rating;
+            review.ReviewStatusId = 3;
+            review.ModifiedBy = currentUserId;
+            review.ModifiedOn = DateTime.Now;
+
+            DbContext.SaveChanges();
+
+            return Ok();
         }
 
         // DELETE api/reviews/5

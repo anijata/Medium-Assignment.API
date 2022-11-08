@@ -8,8 +8,13 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Medium_Assignment.API.Models
 {
+    public class ReviewListViewModel {
+
+        public List<ReviewGetViewModel> reviews;
+    }
     public class ReviewGetViewModel
     {
+        public int Id { get; set; }
         public string Reviewer { get; set; }
         public int? ReviewerId { get; set; }
 
@@ -62,7 +67,28 @@ namespace Medium_Assignment.API.Models
         public decimal MaxRate { get; set; }
 
         public string Description { get; set; }
-
-       
     }
+
+    public class ReviewAssignBindingModel {
+        [Required]
+        public int? ReviewerId { get; set; }
+        
+        [Required]
+
+        public List<int?> EmployeeIds { get; set; }
+
+    }
+
+    public class ReviewSubmitBindingModel
+    {
+        [Required]
+        public int Rating { get; set; }
+
+        [Required]
+        public string Feedback { get; set; }
+
+    }
+
+
+
 }

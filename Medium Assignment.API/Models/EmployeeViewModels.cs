@@ -29,6 +29,8 @@ namespace Medium_Assignment.API.Models
         [Display(Name = "Last Name")]
         public string UserName { get; set; }
 
+        public string DisplayName { get; set; }
+
         [Required]
         [EmailAddress]
         [Display(Name = "Email")]
@@ -97,7 +99,7 @@ namespace Medium_Assignment.API.Models
 
     }
 
-    public class EmployeeNewViewModel
+    public class EmployeePostViewModel
     {
 
         [Required]
@@ -169,9 +171,6 @@ namespace Medium_Assignment.API.Models
 
         [Required]
         public string Status { get; set; }
-
-        [Required]
-        public int OrganizationId { get; set; }
 
     }
 

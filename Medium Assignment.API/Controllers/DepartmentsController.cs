@@ -75,7 +75,6 @@ namespace Medium_Assignment.API.Controllers
 
                     Name = department.Name,
 
-                    OrganizationId = department.OrganizationId
 
                 };
 
@@ -110,7 +109,6 @@ namespace Medium_Assignment.API.Controllers
 
                 Name = department.Name,
 
-                OrganizationId = department.OrganizationId
 
             };
 
@@ -118,7 +116,7 @@ namespace Medium_Assignment.API.Controllers
         }
 
         // POST api/departments
-        public IHttpActionResult Post(DepartmentNewViewModel model)
+        public IHttpActionResult Post(DepartmentPostViewModel model)
         {
             if (!ModelState.IsValid) {
                 return BadRequest();
@@ -149,7 +147,7 @@ namespace Medium_Assignment.API.Controllers
 
         // PUT api/departments/5
         [HttpPut]
-        public IHttpActionResult Put(int id, DepartmentNewViewModel model)
+        public IHttpActionResult Put(int id, DepartmentPostViewModel model)
         {
 
             if (!ModelState.IsValid)
