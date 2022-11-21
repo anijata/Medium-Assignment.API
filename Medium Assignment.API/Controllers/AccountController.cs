@@ -5,7 +5,9 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Web;
+using System.Linq;
 using System.Web.Http;
+using System.Data.Entity;
 using System.Web.Http.ModelBinding;
 using Microsoft.AspNet.Identity;
 using Microsoft.AspNet.Identity.EntityFramework;
@@ -24,15 +26,19 @@ namespace Medium_Assignment.API.Controllers
     public class AccountController : ApiController
     {
         private const string LocalLoginProvider = "Local";
+        private ApplicationDbContext DbContext { get; set; }
+
         private ApplicationUserManager _userManager;
 
         public AccountController()
         {
+            DbContext = new ApplicationDbContext();
         }
 
         public AccountController(ApplicationUserManager userManager,
             ISecureDataFormat<AuthenticationTicket> accessTokenFormat)
         {
+            DbContext = new ApplicationDbContext();
             UserManager = userManager;
             AccessTokenFormat = accessTokenFormat;
         }
@@ -50,6 +56,23 @@ namespace Medium_Assignment.API.Controllers
         }
 
         public ISecureDataFormat<AuthenticationTicket> AccessTokenFormat { get; private set; }
+
+        // GET api/Account/Roles
+        [Route("Roles")]
+        public async Task <IHttpActionResult> GetRoles() {
+            //var roleStore = new RoleStore<IdentityRole>(DbContext);
+            //var roleManager = new RoleManager<IdentityRole>(roleStore);
+            //var roles = roleManager.Roles.Where( c => c.Users.I).Select(x => x.Name).ToList();
+
+            List<string> roles = (await UserManager.GetRolesAsync(User.Identity.GetUserId())).ToList();
+
+            var model = new AuthRolesViewModel {
+                Roles = roles
+            };
+
+            return Ok(model);
+        }
+
 
         // GET api/Account/UserInfo
         [HostAuthentication(DefaultAuthenticationTypes.ExternalBearer)]

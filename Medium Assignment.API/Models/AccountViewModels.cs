@@ -14,6 +14,11 @@ namespace Medium_Assignment.API.Models
         public string State { get; set; }
     }
 
+    public class AuthRolesViewModel : WebAPIClientBindingModel
+    {
+        public List<string> Roles { get; set; }
+    }
+
     public class ManageInfoViewModel
     {
         public string LocalLoginProvider { get; set; }

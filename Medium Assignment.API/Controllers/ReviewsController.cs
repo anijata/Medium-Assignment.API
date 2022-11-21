@@ -64,7 +64,7 @@ namespace Medium_Assignment.API.Controllers
                 .ToList();
 
             var model = new ReviewListViewModel {
-                reviews = new List<ReviewGetViewModel>()
+                Reviews = new List<ReviewGetViewModel>()
             
             };
 
@@ -92,7 +92,7 @@ namespace Medium_Assignment.API.Controllers
 
                 
 
-                model.reviews.Add(getModel);
+                model.Reviews.Add(getModel);
             }
 
             return Ok(model);

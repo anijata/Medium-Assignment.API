@@ -147,7 +147,7 @@ namespace Medium_Assignment.API.Controllers
 
         // PUT api/departments/5
         [HttpPut]
-        public IHttpActionResult Put(int id, DepartmentPostViewModel model)
+        public IHttpActionResult Put(int id, DepartmentPutViewModel model)
         {
 
             if (!ModelState.IsValid)

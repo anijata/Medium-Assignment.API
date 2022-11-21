@@ -10,7 +10,7 @@ namespace Medium_Assignment.API.Models
 {
     public class ReviewListViewModel {
 
-        public List<ReviewGetViewModel> reviews;
+        public List<ReviewGetViewModel> Reviews;
     }
     public class ReviewGetViewModel
     {

@@ -124,23 +124,30 @@ namespace Medium_Assignment.API.Controllers
 
         // POST: api/Organizations
         [HttpPost]
-        public async Task<IHttpActionResult> Post(OrganizationPostViewModel model)
+        public async Task<IHttpActionResult> Post(OrganizationPostViewModel model) 
         {
-
             if (!ModelState.IsValid)
-                return BadRequest();
+                return BadRequest(ModelState);
 
             var user = new ApplicationUser { UserName = model.UserName, Email = model.Email, PhoneNumber = model.PhoneNumber };
             var result = await UserManager.CreateAsync(user, model.Password);
 
-            if (!result.Succeeded)
-                return BadRequest();
+            if (!result.Succeeded) {
+                model.IsSuccess = false;
+                foreach (var error in result.Errors) {
+                    ModelState.AddModelError("", error);
+                }
+
+                
+                
+                return BadRequest(ModelState);
+            }
             
 
             result = await UserManager.AddToRoleAsync(user.Id, "OrganizationAdmin");
 
             if (!result.Succeeded)
-                return BadRequest();
+                return BadRequest(ModelState);
             
             var organization = new Organization {
                 Name = model.Name,
@@ -172,7 +179,7 @@ namespace Medium_Assignment.API.Controllers
         public async Task<IHttpActionResult> Put(int id, OrganizationPutViewModel model) {
 
             if (!ModelState.IsValid)
-                return BadRequest();
+                return BadRequest(ModelState);
 
             var organization = DbContext.Organizations
                .Where(c => !c.IsDeleted && c.Id == id)
@@ -183,7 +190,7 @@ namespace Medium_Assignment.API.Controllers
                .SingleOrDefault();
 
             if (organization == null || !ModelState.IsValid)
-                return BadRequest();
+                return BadRequest(ModelState);
 
             var user = UserManager.FindById(organization.ApplicationUserId);
 
@@ -193,8 +200,15 @@ namespace Medium_Assignment.API.Controllers
 
             var result = await UserManager.UpdateAsync(user);
 
-            if (!result.Succeeded)
-                return BadRequest();
+            if (!result.Succeeded) {
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError("", error);
+                }
+
+                return BadRequest(ModelState);
+            }
+                
 
 
             organization.Name = model.Name;

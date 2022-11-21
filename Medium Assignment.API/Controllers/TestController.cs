@@ -27,15 +27,13 @@ namespace Medium_Assignment.API.Controllers
 
     public class TestPutViewModel
     {
-
         public int value1 { get; set; }
 
         public int value2 { get; set; }
 
     }
 
-
-    [Authorize]
+   //[Authorize]
     public class TestController : ApiController
     {
         // GET api/test
@@ -66,6 +64,7 @@ namespace Medium_Assignment.API.Controllers
         {
            
             return Ok();
+        
         }
 
         public IHttpActionResult Put(int id, TestPostViewModel model)
