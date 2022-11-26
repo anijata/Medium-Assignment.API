@@ -20,6 +20,7 @@ using Microsoft.Owin.Security.Cookies;
 using Microsoft.Owin.Security.OAuth;
 using Medium_Assignment.API.Providers;
 using Medium_Assignment.API.Results;
+using Medium_Assignment.API.Repo;
 
 namespace Medium_Assignment.API.Controllers
 {
@@ -28,10 +29,13 @@ namespace Medium_Assignment.API.Controllers
     {
         private ApplicationDbContext DbContext { get; set; }
 
+        private IUnitOfWork UnitOfWork { get; set; }
+
         private ApplicationUserManager _userManager;
 
         public OrganizationsController() {
             DbContext = new ApplicationDbContext();
+            UnitOfWork = new UnitOfWork(DbContext);
         }
 
         public ApplicationUserManager UserManager
@@ -49,12 +53,7 @@ namespace Medium_Assignment.API.Controllers
         // GET: api/Organizations
         public IHttpActionResult Get()
         {
-            var organizations = DbContext.Organizations
-                .Where(c => !c.IsDeleted)
-                .Include(c => c.ApplicationUser)
-                .Include(c => c.Country)
-                .Include(c => c.State)
-                .Include(c => c.City);
+            var organizations = UnitOfWork.Organizations.List();
 
             var model = new OrganizationListViewModel { Organizations = new List<OrganizationGetViewModel>()};
 
@@ -88,16 +87,14 @@ namespace Medium_Assignment.API.Controllers
         // GET: api/Organizations/5
         public IHttpActionResult Get(int id)
         {
-            var organization = DbContext.Organizations
-               .Where(c => !c.IsDeleted && c.Id == id)
-               .Include(c => c.ApplicationUser)
-               .Include(c => c.Country)
-               .Include(c => c.State)
-               .Include(c => c.City)
-               .SingleOrDefault();
+            var organization = UnitOfWork.Organizations.Get(id);
 
-            if (organization == null)
+
+            if (organization == null) {
+                //AddErrors("Resource not found");
                 return BadRequest(ModelState);
+            }
+                
 
             var model = new OrganizationGetViewModel { 
                 Id = organization.Id,
@@ -133,13 +130,7 @@ namespace Medium_Assignment.API.Controllers
             var result = await UserManager.CreateAsync(user, model.Password);
 
             if (!result.Succeeded) {
-                model.IsSuccess = false;
-                foreach (var error in result.Errors) {
-                    ModelState.AddModelError("", error);
-                }
-
-                
-                
+                //AddErrors(result.Errors);
                 return BadRequest(ModelState);
             }
             
@@ -147,8 +138,11 @@ namespace Medium_Assignment.API.Controllers
             result = await UserManager.AddToRoleAsync(user.Id, "OrganizationAdmin");
 
             if (!result.Succeeded)
+            {
+                //AddErrors(result.Errors);
                 return BadRequest(ModelState);
-            
+            }
+
             var organization = new Organization {
                 Name = model.Name,
                 Address1 = model.Address1,
@@ -166,9 +160,9 @@ namespace Medium_Assignment.API.Controllers
                 
             };
 
-            DbContext.Organizations.Add(organization);
+            UnitOfWork.Organizations.Add(organization);
 
-            DbContext.SaveChanges();
+            UnitOfWork.Complete();
 
             return Ok();
 
@@ -178,19 +172,17 @@ namespace Medium_Assignment.API.Controllers
         [HttpPut]
         public async Task<IHttpActionResult> Put(int id, OrganizationPutViewModel model) {
 
-            if (!ModelState.IsValid)
+            if (!ModelState.IsValid) {
                 return BadRequest(ModelState);
+            }
+                
+            var organization = UnitOfWork.Organizations.Get(id);
 
-            var organization = DbContext.Organizations
-               .Where(c => !c.IsDeleted && c.Id == id)
-               .Include(c => c.ApplicationUser)
-               .Include(c => c.Country)
-               .Include(c => c.State)
-               .Include(c => c.City)
-               .SingleOrDefault();
-
-            if (organization == null || !ModelState.IsValid)
+            if (organization == null) {
+                //AddErrors("Cannot find resource.");
                 return BadRequest(ModelState);
+            }
+                
 
             var user = UserManager.FindById(organization.ApplicationUserId);
 
@@ -201,15 +193,10 @@ namespace Medium_Assignment.API.Controllers
             var result = await UserManager.UpdateAsync(user);
 
             if (!result.Succeeded) {
-                foreach (var error in result.Errors)
-                {
-                    ModelState.AddModelError("", error);
-                }
-
+//AddErrors(result.Errors);
                 return BadRequest(ModelState);
-            }
-                
 
+            }
 
             organization.Name = model.Name;
             organization.Address1 = model.Address1;
@@ -222,7 +209,7 @@ namespace Medium_Assignment.API.Controllers
             organization.ModifiedBy = User.Identity.GetUserId();
             organization.ModifiedOn = DateTime.Now;
 
-            DbContext.SaveChanges();
+            UnitOfWork.Complete();
 
             return Ok();
         }
@@ -231,5 +218,18 @@ namespace Medium_Assignment.API.Controllers
         public void Delete(int id)
         {
         }
+
+        //public void AddErrors(string error)
+        //{
+        //    ModelState.AddModelError("", error);
+        //}
+
+        //public void AddErrors(IEnumerable<string> errors)
+        //{
+        //    foreach (var error in errors)
+        //    {
+        //        ModelState.AddModelError("", error);
+        //    }
+        //}
     }
 }

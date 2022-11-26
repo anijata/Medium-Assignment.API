@@ -220,6 +220,7 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Helper\Helper.cs" />
     <Compile Include="Migrations\202210300339280_InitialCreate.cs" />
     <Compile Include="Migrations\202210300339280_InitialCreate.designer.cs">
       <DependentUpon>202210300339280_InitialCreate.cs</DependentUpon>
@@ -231,6 +232,10 @@
     <Compile Include="Migrations\202210302355010_SeedCountryStateCity.cs" />
     <Compile Include="Migrations\202210302355010_SeedCountryStateCity.Designer.cs">
       <DependentUpon>202210302355010_SeedCountryStateCity.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202211250756469_RemovedRemoveEmployyes.cs" />
+    <Compile Include="Migrations\202211250756469_RemovedRemoveEmployyes.Designer.cs">
+      <DependentUpon>202211250756469_RemovedRemoveEmployyes.cs</DependentUpon>
     </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Models\AccountBindingModels.cs" />
@@ -253,6 +258,14 @@
     <Compile Include="Models\WebAPIClientBindingModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Providers\ApplicationOAuthProvider.cs" />
+    <Compile Include="Repo\DepartmentRepository.cs" />
+    <Compile Include="Repo\EmployeeRepository.cs" />
+    <Compile Include="Repo\GenericRepository.cs" />
+    <Compile Include="Repo\IRepository.cs" />
+    <Compile Include="Repo\IUnitOfWork.cs" />
+    <Compile Include="Repo\OrganizationRepository.cs" />
+    <Compile Include="Repo\ReviewRepository.cs" />
+    <Compile Include="Repo\UnitOfWork.cs" />
     <Compile Include="Results\ChallengeResult.cs" />
     <Compile Include="Startup.cs" />
   </ItemGroup>
@@ -367,6 +380,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\202210302355010_SeedCountryStateCity.resx">
       <DependentUpon>202210302355010_SeedCountryStateCity.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202211250756469_RemovedRemoveEmployyes.resx">
+      <DependentUpon>202211250756469_RemovedRemoveEmployyes.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

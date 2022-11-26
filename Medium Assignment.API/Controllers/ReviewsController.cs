@@ -20,20 +20,23 @@ using Microsoft.Owin.Security.Cookies;
 using Microsoft.Owin.Security.OAuth;
 using Medium_Assignment.API.Providers;
 using Medium_Assignment.API.Results;
-
+using Medium_Assignment.API.Repo;
 
 namespace Medium_Assignment.API.Controllers
 {
-    [Authorize(Roles = "OrganizationAdmin")]
+    
     public class ReviewsController : ApiController
     {
         private ApplicationDbContext DbContext { get; set; }
 
         private ApplicationUserManager _userManager;
 
+        private UnitOfWork UnitOfWork;
+
         public ReviewsController()
         {
             DbContext = new ApplicationDbContext();
+            UnitOfWork = new UnitOfWork(DbContext);
         }
 
         public ApplicationUserManager UserManager
@@ -48,20 +51,21 @@ namespace Medium_Assignment.API.Controllers
             }
         }
 
+        [Authorize(Roles = "OrganizationAdmin")]
         // GET api/reviews
         public IHttpActionResult Get()
         {
             var currentUserId = User.Identity.GetUserId();
-            var organization = DbContext.Organizations
-                .Where(c => !c.IsDeleted && c.ApplicationUserId.Equals(currentUserId))
-                .SingleOrDefault();
 
-            var reviews = DbContext.Reviews
-                .Where(c => !c.IsDeleted && c.OrganizationId == c.OrganizationId)
-                .Include(c => c.Employee)
-                .Include(c => c.Reviewer)
-                .Include(c => c.ReviewStatus)
-                .ToList();
+            var organization = UnitOfWork.Organizations
+                .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
+
+            if (organization == null) {
+                //AddErrors("Resource not available");
+                return BadRequest(ModelState);
+            }
+
+            var reviews = UnitOfWork.Reviews.List(c => organization.Id == c.OrganizationId);
 
             var model = new ReviewListViewModel {
                 Reviews = new List<ReviewGetViewModel>()
@@ -99,24 +103,28 @@ namespace Medium_Assignment.API.Controllers
 
         }
 
+        [Authorize(Roles = "OrganizationAdmin")]
         // GET api/reviews/{id}
         public IHttpActionResult Get(int id)
         {
 
             var currentUserId = User.Identity.GetUserId();
-            var organization = DbContext.Organizations
-                .Where(c => !c.IsDeleted && c.ApplicationUserId.Equals(currentUserId))
-                .SingleOrDefault();
 
-            var review = DbContext.Reviews
-                .Where(c => c.Id == id && !c.IsDeleted && c.OrganizationId == c.OrganizationId)
-                .Include(c => c.Employee)
-                .Include(c => c.Reviewer)
-                .Include(c => c.ReviewStatus)
-                .SingleOrDefault();
+            var organization = UnitOfWork.Organizations
+                .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
 
-            if (review == null)
-                return BadRequest();
+            if (organization == null) {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
+            }
+
+            var review = UnitOfWork.Reviews.Get(id);
+
+            if (review == null || review.OrganizationId != organization.Id)
+            {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
+            }
 
             var model = new ReviewGetViewModel {
                 Id = id,
@@ -142,21 +150,116 @@ namespace Medium_Assignment.API.Controllers
             return Ok(model);
         }
 
+        [HttpGet]
+        [Authorize(Roles = "Employee")]
+        [Route("api/reviews/assigned/{id}")]
+        public IHttpActionResult AssignedReview(int id)
+        {
+
+            var currentUserId = User.Identity.GetUserId();
+
+            var review = UnitOfWork.Reviews.Get(id);
+
+            if (review == null ||
+                !review.Reviewer.ApplicationUserId.Equals(currentUserId))
+            {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
+            }
+
+            var model = new ReviewGetViewModel
+            {
+                Id = id,
+                Agenda = review.Agenda,
+                Description = review.Description,
+                EmployeeId = review.EmployeeId ?? 0,
+                Employee = (review.Employee == null) ? "" : $"{review.Employee.FirstName}, {review.Employee.LastName}",
+                Feedback = review.Feedback,
+                MaxRate = review.MaxRate,
+                MinRate = review.MinRate,
+                OrganizationId = review.OrganizationId,
+                Rating = review.Rating,
+                ReviewCycleStartDate = review.ReviewCycleStartDate,
+                ReviewCycleEndDate = review.ReviewCycleStartDate,
+                Reviewer = (review.Reviewer == null) ? "" : $"{review.Reviewer.FirstName}, {review.Reviewer.LastName}",
+                ReviewerId = review.ReviewerId ?? 0,
+                ReviewStatus = review.ReviewStatus.Name,
+                ReviewStatusId = review.ReviewStatusId
+
+            };
+
+
+            return Ok(model);
+
+        }
+
+
+        [HttpGet]
+        [Route("api/reviews/assigned")]
+        [Authorize(Roles = "Employee")]
+        public IHttpActionResult AssignedReviews() {
+            var currentUserId = User.Identity.GetUserId();
+
+            var reviews = UnitOfWork.Reviews.List(c => c.Reviewer.ApplicationUserId.Equals(currentUserId));
+
+            var model = new ReviewListViewModel
+            {
+                Reviews = new List<ReviewGetViewModel>()
+
+            };
+
+            foreach (var review in reviews)
+            {
+                var getModel = new ReviewGetViewModel
+                {
+                    Id = review.Id,
+                    Agenda = review.Agenda,
+                    Description = review.Description,
+                    EmployeeId = review.EmployeeId ?? 0,
+                    Employee = (review.Employee == null) ? "" : $"{review.Employee.FirstName}, {review.Employee.LastName}",
+                    Feedback = review.Feedback,
+                    MaxRate = review.MaxRate,
+                    MinRate = review.MinRate,
+                    OrganizationId = review.OrganizationId,
+                    Rating = review.Rating,
+                    ReviewCycleStartDate = review.ReviewCycleStartDate,
+                    ReviewCycleEndDate = review.ReviewCycleStartDate,
+                    Reviewer = (review.Reviewer == null) ? "" : $"{review.Reviewer.FirstName}, {review.Reviewer.LastName}",
+                    ReviewerId = review.ReviewerId ?? 0,
+                    ReviewStatus = review.ReviewStatus.Name,
+                    ReviewStatusId = review.ReviewStatusId
+
+                };
+
+
+
+                model.Reviews.Add(getModel);
+            }
+
+            return Ok(model);
+        
+        }
+
+        [Authorize(Roles = "OrganizationAdmin")]
         // POST api/reviews
         [Route("api/reviews/new")]
         [HttpPost]
         public IHttpActionResult NewReview(ReviewNewViewModel viewModel)
         {
-            if (!ModelState.IsValid)
-                return BadRequest();
+            if (!ModelState.IsValid) {
+                return BadRequest(ModelState);
+            }
 
             var currentUserId = User.Identity.GetUserId();
-            var organization = DbContext.Organizations
-                .Where(c => !c.IsDeleted && c.ApplicationUserId.Equals(currentUserId))
-                .SingleOrDefault();
 
-            if (organization == null)
-                return BadRequest();
+            var organization = UnitOfWork.Organizations
+                .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
+
+
+            if (organization == null) {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
+            }
 
             var review = new Review
             {
@@ -177,30 +280,36 @@ namespace Medium_Assignment.API.Controllers
 
             };
 
-            DbContext.Reviews.Add(review);
+            UnitOfWork.Reviews.Add(review);
 
-            DbContext.SaveChanges();
+            UnitOfWork.Complete();
 
             return Ok();
         }
 
+        [Authorize(Roles = "OrganizationAdmin")]
         [HttpPut]
         [Route("api/reviews/assign/{id}")]
-        public IHttpActionResult AssignReview(int id, ReviewAssignBindingModel bindModel) {
+        public IHttpActionResult AssignReview(int id, ReviewAssignBindingModel bindModel) 
+        {
             var currentUserId = User.Identity.GetUserId();
-            var organization = DbContext.Organizations
-                .Where(c => !c.IsDeleted && c.ApplicationUserId.Equals(currentUserId))
-                .SingleOrDefault();
 
-            var review = DbContext.Reviews
-                .Where(c => c.Id == id &&  !c.IsDeleted && c.OrganizationId == c.OrganizationId)
-                .Include(c => c.Employee)
-                .Include(c => c.Reviewer)
-                .Include(c => c.ReviewStatus)
-                .SingleOrDefault();
+            var organization = UnitOfWork.Organizations
+                   .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
 
-            if (review == null)
-                return BadRequest();
+            if (organization == null) {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
+            }
+
+            var review = UnitOfWork.Reviews.Get(id);
+
+            if (review == null || review.OrganizationId != organization.Id)
+            {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
+                
+            }
 
             review.ReviewerId = bindModel.ReviewerId;
             review.EmployeeId = bindModel.EmployeeIds.First();
@@ -228,32 +337,29 @@ namespace Medium_Assignment.API.Controllers
 
                 };
 
-                DbContext.Reviews.Add(newReview);
+                UnitOfWork.Reviews.Add(newReview);
             }
 
-            DbContext.SaveChanges();
+            UnitOfWork.Complete();
 
             return Ok();
         }
 
-        
+
+        [Authorize(Roles = "Employee")]
         [HttpPut]
         [Route("api/reviews/submit/{id}")]
         public IHttpActionResult SubmitReview(int id, ReviewSubmitBindingModel bindModel) {
             var currentUserId = User.Identity.GetUserId();
-            var organization = DbContext.Organizations
-                .Where(c => !c.IsDeleted && c.ApplicationUserId.Equals(currentUserId))
-                .SingleOrDefault();
 
-            var review = DbContext.Reviews
-                .Where(c => c.Id == id && !c.IsDeleted && c.OrganizationId == c.OrganizationId)
-                .Include(c => c.Employee)
-                .Include(c => c.Reviewer)
-                .Include(c => c.ReviewStatus)
-                .SingleOrDefault();
+            var review = UnitOfWork.Reviews.Get(id);
 
-            if (review == null)
-                return BadRequest();
+            if (review == null ||
+                !review.Reviewer.ApplicationUserId.Equals(currentUserId))
+            {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
+            }
 
             review.Feedback = bindModel.Feedback;
             review.Rating = bindModel.Rating;
@@ -261,15 +367,51 @@ namespace Medium_Assignment.API.Controllers
             review.ModifiedBy = currentUserId;
             review.ModifiedOn = DateTime.Now;
 
-            DbContext.SaveChanges();
+            UnitOfWork.Complete();
 
             return Ok();
         }
 
         // DELETE api/reviews/5
-        public void Delete(int id)
-        {
-        }
+        //public IHttpActionResult Delete(int id)
+        //{
+        //    var currentUserId = User.Identity.GetUserId();
+        //    var organization = DbContext.Organizations.Where(c => c.ApplicationUserId.Equals(currentUserId)).SingleOrDefault();
+
+        //    if (organization == null)
+        //    {
+        //        ModelState.AddModelError("", "Not Authorized to delete this review");
+        //        return BadRequest(ModelState);
+        //    }
+
+
+        //    var review = DbContext.Reviews
+        //        .Where(c => c.Id == id && !c.IsDeleted && organization.Id == c.OrganizationId).FirstOrDefault();
+
+        //    if (review == null)
+        //    {
+        //        ModelState.AddModelError("", "Not Authorized to delete this review");
+        //        return BadRequest(ModelState);
+        //    }
+
+        //    review.IsDeleted = true;
+
+        //    return Ok();
+
+        //}
+
+        //public void AddErrors(string error)
+        //{
+        //    ModelState.AddModelError("", error);
+        //}
+
+        //public void AddErrors(IEnumerable<string> errors)
+        //{
+        //    foreach (var error in errors)
+        //    {
+        //        ModelState.AddModelError("", error);
+        //    }
+        //}
 
     }
 }

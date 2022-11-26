@@ -20,6 +20,7 @@ using Microsoft.Owin.Security.Cookies;
 using Microsoft.Owin.Security.OAuth;
 using Medium_Assignment.API.Providers;
 using Medium_Assignment.API.Results;
+using Medium_Assignment.API.Repo;
 
 namespace Medium_Assignment.API.Controllers
 {
@@ -31,9 +32,12 @@ namespace Medium_Assignment.API.Controllers
 
         private ApplicationUserManager _userManager;
 
+        private IUnitOfWork UnitOfWork { get; set; }
+
         public EmployeesController()
         {
             DbContext = new ApplicationDbContext();
+            UnitOfWork = new UnitOfWork(DbContext);
         }
 
         public ApplicationUserManager UserManager
@@ -53,22 +57,16 @@ namespace Medium_Assignment.API.Controllers
         public IHttpActionResult Get()
         {
             var currentUserId = User.Identity.GetUserId();
-            var organization = DbContext.Organizations
-                .Where(c => !c.IsDeleted && c.ApplicationUserId.Equals(currentUserId))
-                .SingleOrDefault();
 
-            if (organization == null)
-                return BadRequest();
+            var organization = UnitOfWork.Organizations
+                .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
 
-            var employees = DbContext.Employees
-                .Include(c => c.ApplicationUser)
-                .Include(c => c.City)
-                .Include(c => c.State)
-                .Include(c => c.Country)
-                .Include(c => c.Department)
-                .Include(c => c.Organization)
-                .Where(c => !c.IsDeleted && c.OrganizationId == organization.Id)
-                .ToList();
+            if (organization == null) {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
+            }
+                
+            var employees = UnitOfWork.Employees.List(c => c.OrganizationId == organization.Id);
 
             var model = new EmployeeListViewModel { Employees = new List<EmployeeGetViewModel>()};
 
@@ -112,25 +110,22 @@ namespace Medium_Assignment.API.Controllers
         public IHttpActionResult Get(int id)
         {
             var currentUserId = User.Identity.GetUserId();
-            var organization = DbContext.Organizations
-                .Where(c => !c.IsDeleted && c.ApplicationUserId.Equals(currentUserId))
-                .SingleOrDefault();
 
-            if (organization == null)
-                return BadRequest();
+            var organization = UnitOfWork.Organizations
+                .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
 
-            var employee = DbContext.Employees
-                .Include(c => c.ApplicationUser)
-                .Include(c => c.City)
-                .Include(c => c.State)
-                .Include(c => c.Country)
-                .Include(c => c.Department)
-                .Include(c => c.Organization)
-                .Where(c => !c.IsDeleted && c.OrganizationId == organization.Id && c.Id == id)
-                .SingleOrDefault();
 
-            if (employee == null)
-                return BadRequest();
+            if (organization == null) {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
+
+            }
+            var employee = UnitOfWork.Employees.Get(id);
+
+            if (employee == null || employee.OrganizationId != organization.Id) {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
+            }
 
              var model = new EmployeeGetViewModel { 
                 Id = employee.Id,
@@ -168,24 +163,34 @@ namespace Medium_Assignment.API.Controllers
         public async Task<IHttpActionResult> Post(EmployeePostViewModel model)
         {
             if (!ModelState.IsValid)
-                return BadRequest();
+            {
+                return BadRequest(ModelState);
+
+            }
 
             var currentUserId = User.Identity.GetUserId();
-            var organization = DbContext.Organizations
-                .Where(c => !c.IsDeleted && c.ApplicationUserId.Equals(currentUserId))
-                .SingleOrDefault();
+
+            var organization = UnitOfWork.Organizations
+                .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
+
 
             var user = new ApplicationUser { UserName = model.UserName, Email = model.Email, PhoneNumber = model.PhoneNumber };
             var result = await UserManager.CreateAsync(user, model.Password);
 
             if (!result.Succeeded)
-                return BadRequest();
+            {
+                // AddErrors(result.Errors);
+                return BadRequest(ModelState);
+            }
 
 
             result = await UserManager.AddToRoleAsync(user.Id, "Employee");
 
             if (!result.Succeeded)
-                return BadRequest();
+            {
+                //AddErrors(result.Errors);
+                return BadRequest(ModelState);
+            }
 
             var employee = new Employee { 
                 FirstName = model.FirstName,
@@ -210,9 +215,9 @@ namespace Medium_Assignment.API.Controllers
                 ModifiedOn = DateTime.Now
             };
 
-            DbContext.Employees.Add(employee);
+            UnitOfWork.Employees.Add(employee);
 
-            DbContext.SaveChanges();
+            UnitOfWork.Complete();
 
             return Ok();
         }
@@ -221,29 +226,30 @@ namespace Medium_Assignment.API.Controllers
         [HttpPut]
         public async Task<IHttpActionResult> Put(int id, EmployeePutViewModel model)
         {
-            if (!ModelState.IsValid)
-                return BadRequest();
+            if (!ModelState.IsValid) {
+                return BadRequest(ModelState);
+            }               
 
             var currentUserId = User.Identity.GetUserId();
-            var organization = DbContext.Organizations
-                .Where(c => !c.IsDeleted && c.ApplicationUserId.Equals(currentUserId))
-                .SingleOrDefault();
 
-            if (organization == null)
-                return BadRequest();
+            var organization = UnitOfWork.Organizations
+                .List(c => c.ApplicationUserId.Equals(currentUserId))
+                .FirstOrDefault();
 
-            var employee = DbContext.Employees
-                .Include(c => c.ApplicationUser)
-                .Include(c => c.City)
-                .Include(c => c.State)
-                .Include(c => c.Country)
-                .Include(c => c.Department)
-                .Include(c => c.Organization)
-                .Where(c => !c.IsDeleted && c.OrganizationId == organization.Id && c.Id == id)
-                .SingleOrDefault();
 
-            if (employee == null)
-                return BadRequest();
+            if (organization == null) {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
+                
+            }
+
+            var employee = UnitOfWork.Employees.Get(id);
+
+            if (employee == null || employee.OrganizationId != organization.Id) {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
+
+            }
 
             var user = UserManager.FindById(employee.ApplicationUserId);
 
@@ -253,9 +259,10 @@ namespace Medium_Assignment.API.Controllers
 
             var result = await UserManager.UpdateAsync(user);
 
-            if (!result.Succeeded)
-                return BadRequest();
-
+            if (!result.Succeeded) {
+                //AddErrors(result.Errors);
+                return BadRequest(ModelState);
+            }
 
             employee.FirstName = model.FirstName;
             employee.LastName = model.LastName;
@@ -274,48 +281,68 @@ namespace Medium_Assignment.API.Controllers
             employee.ModifiedBy = currentUserId;
             employee.ModifiedOn = DateTime.Now;
 
-            DbContext.SaveChanges();
+            UnitOfWork.Complete();
 
             return Ok();
         }
 
         // DELETE api/employees/5
-        public IHttpActionResult Delete(int id)
-        {
+        //public IHttpActionResult Delete(int id)
+        //{
 
-            var currentUserId = User.Identity.GetUserId();
-            var organization = DbContext.Organizations
-                .Where(c => !c.IsDeleted && c.ApplicationUserId.Equals(currentUserId))
-                .SingleOrDefault();
+        //    var currentUserId = User.Identity.GetUserId();
 
-            if (organization == null)
-                return BadRequest();
+        //    //var organization = DbContext.Organizations
+        //    //    .Where(c => !c.IsDeleted && c.ApplicationUserId.Equals(currentUserId))
+        //    //    .SingleOrDefault();
 
-            var employee = DbContext.Employees
-                .Include(c => c.ApplicationUser)
-                .Include(c => c.City)
-                .Include(c => c.State)
-                .Include(c => c.Country)
-                .Include(c => c.Department)
-                .Include(c => c.Organization)
-                .Where(c => !c.IsDeleted && c.OrganizationId == organization.Id && c.Id == id)
-                .SingleOrDefault();
+        //    var organization = UnitOfWork.Organizations
+        //        .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
 
-            if (employee == null)
-                return BadRequest();
 
-            var reviews = DbContext.Reviews.
-                Where(c => !c.IsDeleted && (c.EmployeeId == id || c.ReviewerId == id));
+        //    if (organization == null)
+        //        return BadRequest();
 
-            foreach (var review in reviews) {
-                review.IsDeleted = true;
-            }
-            
-            employee.IsDeleted = true;
+        //    //var employee = DbContext.Employees
+        //    //    .Include(c => c.ApplicationUser)
+        //    //    .Include(c => c.City)
+        //    //    .Include(c => c.State)
+        //    //    .Include(c => c.Country)
+        //    //    .Include(c => c.Department)
+        //    //    .Include(c => c.Organization)
+        //    //    .Where(c => !c.IsDeleted && c.OrganizationId == organization.Id && c.Id == id)
+        //    //    .SingleOrDefault();
 
-            DbContext.SaveChanges();
+        //    var employee = UnitOfWork.Employees.Get(id);
 
-            return Ok();
-        }
+        //    if (employee == null || employee.OrganizationId == organization.Id)
+        //        return BadRequest();
+
+        //    var reviews = DbContext.Reviews.
+        //        Where(c => !c.IsDeleted && (c.EmployeeId == id || c.ReviewerId == id));
+
+        //    foreach (var review in reviews) {
+        //        review.IsDeleted = true;
+        //    }
+
+        //    employee.IsDeleted = true;
+
+        //    DbContext.SaveChanges();
+
+        //    return Ok();
+        //}
+
+        //public void AddErrors(string error)
+        //{
+        //    ModelState.AddModelError("", error);
+        //}
+
+        //public void AddErrors(IEnumerable<string> errors)
+        //{
+        //    foreach (var error in errors)
+        //    {
+        //        ModelState.AddModelError("", error);
+        //    }
+        //}
     }
 }

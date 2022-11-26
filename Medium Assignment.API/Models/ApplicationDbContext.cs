@@ -30,7 +30,6 @@ namespace Medium_Assignment.API.Models
         public DbSet<Employee> Employees { get; set; }
         public DbSet<Organization> Organizations { get; set; }
         public DbSet<Review> Reviews { get; set; }
-        public DbSet<ReviewsEmployees> ReviewsEmployees { get; set; }
         public DbSet<ReviewStatus> ReviewStatuses { get; set; }
         public DbSet<State> States { get; set; }
 
