@@ -62,6 +62,19 @@ namespace Medium_Assignment.API.Repo
             return employees;
         }
 
+        public override void Remove(Employee entity)
+        {
+            entity.IsDeleted = true;
+        }
+
+        public override void RemoveRange(IEnumerable<Employee> entities)
+        {
+            foreach (var entity in entities)
+            {
+                entity.IsDeleted = true;
+            }
+
+        }
 
     }
 }

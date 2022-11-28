@@ -215,8 +215,22 @@ namespace Medium_Assignment.API.Controllers
         }
 
         // DELETE: api/Organizations/5
-        public void Delete(int id)
+        [HttpDelete]
+        public IHttpActionResult Delete(int id)
         {
+            var organization = UnitOfWork.Organizations.Get(id);
+
+            if (organization == null)
+            {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
+            }
+
+            UnitOfWork.Organizations.Remove(organization);
+
+            UnitOfWork.Complete();
+
+            return Ok();
         }
 
         //public void AddErrors(string error)

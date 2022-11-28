@@ -54,6 +54,20 @@ namespace Medium_Assignment.API.Repo
             return reviews;
         }
 
+        public override void Remove(Review entity)
+        {
+            entity.IsDeleted = true;
+        }
+
+        public override void RemoveRange(IEnumerable<Review> entities)
+        {
+            foreach (var entity in entities)
+            {
+                entity.IsDeleted = true;
+            }
+
+        }
+
 
     }
 }

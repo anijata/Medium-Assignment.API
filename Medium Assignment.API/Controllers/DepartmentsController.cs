@@ -202,33 +202,35 @@ namespace Medium_Assignment.API.Controllers
         }
 
         // DELETE api/departments/5
-        //public IHttpActionResult Delete(int id)
-        //{
-        //    var currentUserId = User.Identity.GetUserId();
-        //    var organization = DbContext.Organizations.Where(c => c.ApplicationUserId.Equals(currentUserId)).SingleOrDefault();
+        [HttpDelete]
+        public IHttpActionResult Delete(int id)
+        {
+            var currentUserId = User.Identity.GetUserId();
+            var organization = UnitOfWork.Organizations
+                  .List(c => c.ApplicationUserId.Equals(currentUserId))
+                  .FirstOrDefault();
 
-        //    if (organization == null) {
-        //        ModelState.AddModelError("", "Not Authorized to delete this review");
-        //        return BadRequest(ModelState);
-        //    }
+            if (organization == null)
+            {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
+            }
 
-        //    var department = DbContext.Departments
-        //        .Where(c => c.OrganizationId == organization.Id && !c.IsDeleted && c.Id == id)
-        //        .SingleOrDefault();
 
-        //    if (department == null) { 
-        //        ModelState.AddModelError("", "Not Authorized to delete this review");
-        //        return BadRequest(ModelState);
-        //    }
+            var department = UnitOfWork.Departments.Get(id);
 
-        //    department.IsDeleted = true;
-        //    department.ModifiedBy = currentUserId;
-        //    department.ModifiedOn = DateTime.Now;
+            if (department == null || department.OrganizationId != organization.Id)
+            {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
+            }
 
-        //    DbContext.SaveChanges();
+            UnitOfWork.Departments.Remove(department);
 
-        //    return Ok();
-        //}
+            UnitOfWork.Complete();
+
+            return Ok();
+        }
 
         //public void AddErrors(string error)
         //{

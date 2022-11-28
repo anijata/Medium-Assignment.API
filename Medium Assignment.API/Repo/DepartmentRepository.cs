@@ -46,6 +46,18 @@ namespace Medium_Assignment.API.Repo
             return departments;
         }
 
+        public override void Remove(Department entity)
+        {
+            entity.IsDeleted = true;
+        }
+
+        public override void RemoveRange(IEnumerable<Department> entities)
+        {
+            foreach (var entity in entities) {
+                entity.IsDeleted = true;
+            }
+            
+        }
 
     }
 }

@@ -372,33 +372,37 @@ namespace Medium_Assignment.API.Controllers
             return Ok();
         }
 
+
         // DELETE api/reviews/5
-        //public IHttpActionResult Delete(int id)
-        //{
-        //    var currentUserId = User.Identity.GetUserId();
-        //    var organization = DbContext.Organizations.Where(c => c.ApplicationUserId.Equals(currentUserId)).SingleOrDefault();
+        [HttpDelete]
+        public IHttpActionResult Delete(int id)
+        {
+            var currentUserId = User.Identity.GetUserId();
 
-        //    if (organization == null)
-        //    {
-        //        ModelState.AddModelError("", "Not Authorized to delete this review");
-        //        return BadRequest(ModelState);
-        //    }
+            var organization = UnitOfWork.Organizations
+                .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
 
+            if (organization == null)
+            {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
+            }
 
-        //    var review = DbContext.Reviews
-        //        .Where(c => c.Id == id && !c.IsDeleted && organization.Id == c.OrganizationId).FirstOrDefault();
+            var review = UnitOfWork.Reviews.Get(id);
 
-        //    if (review == null)
-        //    {
-        //        ModelState.AddModelError("", "Not Authorized to delete this review");
-        //        return BadRequest(ModelState);
-        //    }
+            if (review == null || review.OrganizationId != organization.Id)
+            {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
+            }
 
-        //    review.IsDeleted = true;
+            review.IsDeleted = true;
 
-        //    return Ok();
+            UnitOfWork.Complete();
 
-        //}
+            return Ok();
+
+        }
 
         //public void AddErrors(string error)
         //{

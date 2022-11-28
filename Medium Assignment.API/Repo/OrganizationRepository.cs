@@ -56,6 +56,21 @@ namespace Medium_Assignment.API.Repo
             return organizations;
         }
 
+        public override void Remove(Organization entity)
+        {
+            entity.IsDeleted = true;
+        }
+
+        public override void RemoveRange(IEnumerable<Organization> entities)
+        {
+            foreach (var entity in entities)
+            {
+                entity.IsDeleted = true;
+            }
+
+        }
 
     }
+
+    
 }

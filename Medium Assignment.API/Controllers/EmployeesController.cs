@@ -287,50 +287,35 @@ namespace Medium_Assignment.API.Controllers
         }
 
         // DELETE api/employees/5
-        //public IHttpActionResult Delete(int id)
-        //{
+        [HttpDelete]
+        public IHttpActionResult Delete(int id)
+        { 
+            var currentUserId = User.Identity.GetUserId();
 
-        //    var currentUserId = User.Identity.GetUserId();
-
-        //    //var organization = DbContext.Organizations
-        //    //    .Where(c => !c.IsDeleted && c.ApplicationUserId.Equals(currentUserId))
-        //    //    .SingleOrDefault();
-
-        //    var organization = UnitOfWork.Organizations
-        //        .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
+            var organization = UnitOfWork.Organizations
+                .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
 
 
-        //    if (organization == null)
-        //        return BadRequest();
+            if (organization == null)
+            {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
 
-        //    //var employee = DbContext.Employees
-        //    //    .Include(c => c.ApplicationUser)
-        //    //    .Include(c => c.City)
-        //    //    .Include(c => c.State)
-        //    //    .Include(c => c.Country)
-        //    //    .Include(c => c.Department)
-        //    //    .Include(c => c.Organization)
-        //    //    .Where(c => !c.IsDeleted && c.OrganizationId == organization.Id && c.Id == id)
-        //    //    .SingleOrDefault();
+            }
+            var employee = UnitOfWork.Employees.Get(id);
 
-        //    var employee = UnitOfWork.Employees.Get(id);
+            if (employee == null || employee.OrganizationId != organization.Id)
+            {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
+            }
 
-        //    if (employee == null || employee.OrganizationId == organization.Id)
-        //        return BadRequest();
+            UnitOfWork.Employees.Remove(employee);
 
-        //    var reviews = DbContext.Reviews.
-        //        Where(c => !c.IsDeleted && (c.EmployeeId == id || c.ReviewerId == id));
+            UnitOfWork.Complete();
 
-        //    foreach (var review in reviews) {
-        //        review.IsDeleted = true;
-        //    }
-
-        //    employee.IsDeleted = true;
-
-        //    DbContext.SaveChanges();
-
-        //    return Ok();
-        //}
+            return Ok();
+        }
 
         //public void AddErrors(string error)
         //{
