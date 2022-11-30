@@ -251,7 +251,6 @@
     <Compile Include="Models\Organization.cs" />
     <Compile Include="Models\OrganizationViewModels.cs" />
     <Compile Include="Models\Review.cs" />
-    <Compile Include="Models\ReviewsEmployees.cs" />
     <Compile Include="Models\ReviewStatus.cs" />
     <Compile Include="Models\ReviewViewModels.cs" />
     <Compile Include="Models\State.cs" />

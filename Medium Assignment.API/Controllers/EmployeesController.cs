@@ -179,7 +179,7 @@ namespace Medium_Assignment.API.Controllers
 
             if (!result.Succeeded)
             {
-                // AddErrors(result.Errors);
+                //AddErrors(result.Errors);
                 return BadRequest(ModelState);
             }
 
@@ -317,11 +317,13 @@ namespace Medium_Assignment.API.Controllers
             return Ok();
         }
 
+        //[NonAction]
         //public void AddErrors(string error)
         //{
         //    ModelState.AddModelError("", error);
         //}
 
+        //[NonAction]
         //public void AddErrors(IEnumerable<string> errors)
         //{
         //    foreach (var error in errors)

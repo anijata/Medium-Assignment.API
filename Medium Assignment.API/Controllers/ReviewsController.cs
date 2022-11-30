@@ -289,6 +289,45 @@ namespace Medium_Assignment.API.Controllers
 
         [Authorize(Roles = "OrganizationAdmin")]
         [HttpPut]
+        [Route("api/reviews/edit/{id}")]
+        public IHttpActionResult EditReview(int id, ReviewEditViewModel viewModel) {
+
+            var currentUserId = User.Identity.GetUserId();
+
+            var organization = UnitOfWork.Organizations
+                .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
+
+            if (organization == null)
+            {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
+            }
+
+            var review = UnitOfWork.Reviews.Get(id);
+
+            if (review == null || review.OrganizationId != organization.Id)
+            {
+                //AddErrors("Resource not found");
+                return BadRequest(ModelState);
+            }
+
+            review.Agenda = viewModel.Agenda;
+            review.ReviewCycleStartDate = viewModel.ReviewCycleStartDate;
+            review.ReviewCycleEndDate = viewModel.ReviewCycleEndDate;
+            review.MinRate = viewModel.MinRate;
+            review.MaxRate = viewModel.MaxRate;
+            review.Description = viewModel.Description;
+            review.ModifiedBy = currentUserId;
+            review.ModifiedOn = DateTime.Now;
+
+            UnitOfWork.Complete();
+
+            return Ok();
+
+        }
+
+        [Authorize(Roles = "OrganizationAdmin")]
+        [HttpPut]
         [Route("api/reviews/assign/{id}")]
         public IHttpActionResult AssignReview(int id, ReviewAssignBindingModel bindModel) 
         {
@@ -404,11 +443,13 @@ namespace Medium_Assignment.API.Controllers
 
         }
 
+        //[NonAction]
         //public void AddErrors(string error)
         //{
         //    ModelState.AddModelError("", error);
         //}
 
+        //[NonAction]
         //public void AddErrors(IEnumerable<string> errors)
         //{
         //    foreach (var error in errors)
