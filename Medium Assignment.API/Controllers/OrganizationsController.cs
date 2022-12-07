@@ -21,6 +21,7 @@ using Microsoft.Owin.Security.OAuth;
 using Medium_Assignment.API.Providers;
 using Medium_Assignment.API.Results;
 using Medium_Assignment.API.Repo;
+using System.Data.Entity.Infrastructure;
 
 namespace Medium_Assignment.API.Controllers
 {
@@ -53,7 +54,17 @@ namespace Medium_Assignment.API.Controllers
         // GET: api/Organizations
         public IHttpActionResult Get()
         {
-            var organizations = UnitOfWork.Organizations.List();
+            IEnumerable<Organization> organizations= new List<Organization>();
+
+            try
+            {
+                organizations = UnitOfWork.Organizations.List();
+
+            }
+            catch (Exception ex) {
+                return InternalServerError();
+            }
+            
 
             var model = new OrganizationListViewModel { Organizations = new List<OrganizationGetViewModel>()};
 
@@ -87,12 +98,22 @@ namespace Medium_Assignment.API.Controllers
         // GET: api/Organizations/5
         public IHttpActionResult Get(int id)
         {
-            var organization = UnitOfWork.Organizations.Get(id);
+            var organization = new Organization();
+
+            try
+            {
+                organization = UnitOfWork.Organizations.Get(id);
+
+            }
+            catch (Exception ex)
+            {
+
+                return InternalServerError();
+            }
 
 
             if (organization == null) {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+                return NotFound();
             }
                 
 
@@ -123,15 +144,21 @@ namespace Medium_Assignment.API.Controllers
         [HttpPost]
         public async Task<IHttpActionResult> Post(OrganizationPostViewModel model) 
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            if (!ModelState.IsValid) {
+                var errors =ModelState.Values.SelectMany(m => m.Errors)
+                                 .Select(e => e.ErrorMessage)
+                                 .ToList();
+                model.AddErrors(errors);
+                return BadRequest(model.GetErrors());
+            }
+                
 
             var user = new ApplicationUser { UserName = model.UserName, Email = model.Email, PhoneNumber = model.PhoneNumber };
             var result = await UserManager.CreateAsync(user, model.Password);
 
             if (!result.Succeeded) {
-                //AddErrors(result.Errors);
-                return BadRequest(ModelState);
+                model.AddErrors(result.Errors);
+                return BadRequest(model.GetErrors());
             }
             
 
@@ -139,8 +166,8 @@ namespace Medium_Assignment.API.Controllers
 
             if (!result.Succeeded)
             {
-                //AddErrors(result.Errors);
-                return BadRequest(ModelState);
+                model.AddErrors(result.Errors);
+                return BadRequest(model.GetErrors());
             }
 
             var organization = new Organization {
@@ -160,9 +187,16 @@ namespace Medium_Assignment.API.Controllers
                 
             };
 
-            UnitOfWork.Organizations.Add(organization);
+            try
+            {
+                UnitOfWork.Organizations.Add(organization);
 
-            UnitOfWork.Complete();
+                UnitOfWork.Complete();
+            }
+            catch (DbUpdateException ex) {
+                return InternalServerError();
+            }
+
 
             return Ok();
 
@@ -172,15 +206,28 @@ namespace Medium_Assignment.API.Controllers
         [HttpPut]
         public async Task<IHttpActionResult> Put(int id, OrganizationPutViewModel model) {
 
-            if (!ModelState.IsValid) {
-                return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(m => m.Errors)
+                                 .Select(e => e.ErrorMessage)
+                                 .ToList();
+                model.AddErrors(errors);
+                return BadRequest(model.GetErrors());
             }
-                
-            var organization = UnitOfWork.Organizations.Get(id);
+
+            var organization = new Organization();
+
+            try
+            {
+                organization = UnitOfWork.Organizations.Get(id);
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError();
+            }
 
             if (organization == null) {
-                //AddErrors("Cannot find resource.");
-                return BadRequest(ModelState);
+                return NotFound();
             }
                 
 
@@ -193,8 +240,8 @@ namespace Medium_Assignment.API.Controllers
             var result = await UserManager.UpdateAsync(user);
 
             if (!result.Succeeded) {
-                //AddErrors(result.Errors);
-                return BadRequest(ModelState);
+                model.AddErrors(result.Errors);
+                return BadRequest(model.GetErrors());
 
             }
 
@@ -209,7 +256,15 @@ namespace Medium_Assignment.API.Controllers
             organization.ModifiedBy = User.Identity.GetUserId();
             organization.ModifiedOn = DateTime.Now;
 
-            UnitOfWork.Complete();
+            try
+            {
+                UnitOfWork.Complete();
+            }
+            catch (DbUpdateException ex)
+            {
+                return InternalServerError();
+            }
+
 
             return Ok();
         }
@@ -218,34 +273,35 @@ namespace Medium_Assignment.API.Controllers
         [HttpDelete]
         public IHttpActionResult Delete(int id)
         {
-            var organization = UnitOfWork.Organizations.Get(id);
+            var organization = new Organization();
+
+            try {
+                organization = UnitOfWork.Organizations.Get(id);
+            }     
+            catch (Exception ex)
+            {
+                return InternalServerError();
+            }
+
 
             if (organization == null)
             {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+                return NotFound();
             }
 
-            UnitOfWork.Organizations.Remove(organization);
+            try
+            {
+                UnitOfWork.Organizations.Remove(organization);
 
-            UnitOfWork.Complete();
+                UnitOfWork.Complete();
+            }
+            catch (DbUpdateException ex)
+            {
+                return InternalServerError();
+            }
 
             return Ok();
         }
 
-        //[NonAction]
-        //public void AddErrors(string error)
-        //{
-        //    ModelState.AddModelError("", error);
-        //}
-
-        //[NonAction]
-        //public void AddErrors(IEnumerable<string> errors)
-        //{
-        //    foreach (var error in errors)
-        //    {
-        //        ModelState.AddModelError("", error);
-        //    }
-        //}
     }
 }

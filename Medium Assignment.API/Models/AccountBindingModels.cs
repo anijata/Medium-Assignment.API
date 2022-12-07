@@ -13,7 +13,7 @@ namespace Medium_Assignment.API.Models
         public string ExternalAccessToken { get; set; }
     }
 
-    public class ChangePasswordBindingModel
+    public class ChangePasswordBindingModel: APIBindingModel
     {
         [Required]
         [DataType(DataType.Password)]

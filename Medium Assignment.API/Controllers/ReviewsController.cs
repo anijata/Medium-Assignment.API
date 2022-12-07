@@ -21,6 +21,7 @@ using Microsoft.Owin.Security.OAuth;
 using Medium_Assignment.API.Providers;
 using Medium_Assignment.API.Results;
 using Medium_Assignment.API.Repo;
+using System.Data.Entity.Infrastructure;
 
 namespace Medium_Assignment.API.Controllers
 {
@@ -56,17 +57,26 @@ namespace Medium_Assignment.API.Controllers
         public IHttpActionResult Get()
         {
             var currentUserId = User.Identity.GetUserId();
-
-            var organization = UnitOfWork.Organizations
+            Organization organization;
+            IEnumerable<Review> reviews;
+            try
+            {
+                organization = UnitOfWork.Organizations
                 .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
 
-            if (organization == null) {
-                //AddErrors("Resource not available");
-                return BadRequest(ModelState);
+                if (organization == null)
+                {
+                    return NotFound();
+                }
+
+                reviews = UnitOfWork.Reviews.List(c => organization.Id == c.OrganizationId);
+
+            }
+            catch (Exception ex) { 
+                return InternalServerError();
             }
 
-            var reviews = UnitOfWork.Reviews.List(c => organization.Id == c.OrganizationId);
-
+            
             var model = new ReviewListViewModel {
                 Reviews = new List<ReviewGetViewModel>()
             
@@ -107,24 +117,33 @@ namespace Medium_Assignment.API.Controllers
         // GET api/reviews/{id}
         public IHttpActionResult Get(int id)
         {
-
             var currentUserId = User.Identity.GetUserId();
+            Organization organization;
+            Review review;
 
-            var organization = UnitOfWork.Organizations
+            try
+            {
+                organization = UnitOfWork.Organizations
                 .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
 
-            if (organization == null) {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+                if (organization == null)
+                {
+                    return NotFound();
+                }
+
+                review = UnitOfWork.Reviews.Get(id);
+
+                if (review == null || review.OrganizationId != organization.Id)
+                {
+                    return NotFound();
+                }
             }
-
-            var review = UnitOfWork.Reviews.Get(id);
-
-            if (review == null || review.OrganizationId != organization.Id)
+            catch (Exception ex)
             {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+                return InternalServerError();
             }
+
+            
 
             var model = new ReviewGetViewModel {
                 Id = id,
@@ -158,14 +177,22 @@ namespace Medium_Assignment.API.Controllers
 
             var currentUserId = User.Identity.GetUserId();
 
-            var review = UnitOfWork.Reviews.Get(id);
+            Review review;
 
-            if (review == null ||
-                !review.Reviewer.ApplicationUserId.Equals(currentUserId))
-            {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+            try {
+                review = UnitOfWork.Reviews.Get(id);
+
+                if (review == null ||
+                    !review.Reviewer.ApplicationUserId.Equals(currentUserId))
+                {
+                    return NotFound();
+                }
+
+            } catch (Exception ex) { 
+                return InternalServerError();
             }
+
+            
 
             var model = new ReviewGetViewModel
             {
@@ -200,8 +227,19 @@ namespace Medium_Assignment.API.Controllers
         public IHttpActionResult AssignedReviews() {
             var currentUserId = User.Identity.GetUserId();
 
-            var reviews = UnitOfWork.Reviews.List(c => c.Reviewer.ApplicationUserId.Equals(currentUserId));
+            IEnumerable<Review> reviews;
 
+            try
+            {
+                reviews = UnitOfWork.Reviews.
+                    List(c => c.Reviewer.ApplicationUserId.Equals(currentUserId));
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError();
+            }
+
+            
             var model = new ReviewListViewModel
             {
                 Reviews = new List<ReviewGetViewModel>()
@@ -247,18 +285,29 @@ namespace Medium_Assignment.API.Controllers
         public IHttpActionResult NewReview(ReviewNewViewModel viewModel)
         {
             if (!ModelState.IsValid) {
-                return BadRequest(ModelState);
+                var errors = ModelState.Values.SelectMany(m => m.Errors)
+                 .Select(e => e.ErrorMessage)
+                 .ToList();
+                viewModel.AddErrors(errors);
+                return BadRequest(viewModel.GetErrors());
             }
 
             var currentUserId = User.Identity.GetUserId();
 
-            var organization = UnitOfWork.Organizations
+            Organization organization;
+
+            try
+            {
+                organization = UnitOfWork.Organizations
                 .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
 
 
-            if (organization == null) {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+                if (organization == null)
+                {
+                    return NotFound();
+                }
+            } catch (Exception ex) {
+                return InternalServerError();
             }
 
             var review = new Review
@@ -280,9 +329,18 @@ namespace Medium_Assignment.API.Controllers
 
             };
 
-            UnitOfWork.Reviews.Add(review);
+            try
+            {
+                UnitOfWork.Reviews.Add(review);
 
-            UnitOfWork.Complete();
+                UnitOfWork.Complete();
+
+            }
+            catch (DbUpdateException ex) {
+                return InternalServerError();            
+            }
+
+
 
             return Ok();
         }
@@ -292,23 +350,39 @@ namespace Medium_Assignment.API.Controllers
         [Route("api/reviews/edit/{id}")]
         public IHttpActionResult EditReview(int id, ReviewEditViewModel viewModel) {
 
-            var currentUserId = User.Identity.GetUserId();
-
-            var organization = UnitOfWork.Organizations
-                .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
-
-            if (organization == null)
+            if (!ModelState.IsValid)
             {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+                var errors = ModelState.Values.SelectMany(m => m.Errors)
+                 .Select(e => e.ErrorMessage)
+                 .ToList();
+                viewModel.AddErrors(errors);
+                return BadRequest(viewModel.GetErrors());
             }
 
-            var review = UnitOfWork.Reviews.Get(id);
+            var currentUserId = User.Identity.GetUserId();
 
-            if (review == null || review.OrganizationId != organization.Id)
+            Organization organization;
+            Review review;
+
+            try
             {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+                organization = UnitOfWork.Organizations
+                .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
+
+                if (organization == null)
+                {
+                    return NotFound();
+                }
+
+                review = UnitOfWork.Reviews.Get(id);
+
+                if (review == null || review.OrganizationId != organization.Id)
+                {
+                    return NotFound();
+                }
+            }
+            catch (Exception ex) {
+                return InternalServerError();
             }
 
             review.Agenda = viewModel.Agenda;
@@ -320,7 +394,15 @@ namespace Medium_Assignment.API.Controllers
             review.ModifiedBy = currentUserId;
             review.ModifiedOn = DateTime.Now;
 
-            UnitOfWork.Complete();
+            try {
+                UnitOfWork.Complete();
+            }
+            catch (DbUpdateException ex)
+            {
+                return InternalServerError();
+            }
+
+            
 
             return Ok();
 
@@ -331,23 +413,41 @@ namespace Medium_Assignment.API.Controllers
         [Route("api/reviews/assign/{id}")]
         public IHttpActionResult AssignReview(int id, ReviewAssignBindingModel bindModel) 
         {
-            var currentUserId = User.Identity.GetUserId();
 
-            var organization = UnitOfWork.Organizations
-                   .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
-
-            if (organization == null) {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(m => m.Errors)
+                 .Select(e => e.ErrorMessage)
+                 .ToList();
+                bindModel.AddErrors(errors);
+                return BadRequest(bindModel.GetErrors());
             }
 
-            var review = UnitOfWork.Reviews.Get(id);
+            var currentUserId = User.Identity.GetUserId();
 
-            if (review == null || review.OrganizationId != organization.Id)
+            Organization organization;
+            Review review;
+
+            try
             {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
-                
+                organization = UnitOfWork.Organizations
+                   .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
+
+                if (organization == null)
+                {
+                    return NotFound();
+                }
+
+                review = UnitOfWork.Reviews.Get(id);
+
+                if (review == null || review.OrganizationId != organization.Id)
+                {
+                    return NotFound();
+                }
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError();
             }
 
             review.ReviewerId = bindModel.ReviewerId;
@@ -379,7 +479,15 @@ namespace Medium_Assignment.API.Controllers
                 UnitOfWork.Reviews.Add(newReview);
             }
 
-            UnitOfWork.Complete();
+            try
+            {
+                UnitOfWork.Complete();
+            }
+            catch (DbUpdateException ex)
+            {
+                return InternalServerError();
+            }
+
 
             return Ok();
         }
@@ -389,16 +497,35 @@ namespace Medium_Assignment.API.Controllers
         [HttpPut]
         [Route("api/reviews/submit/{id}")]
         public IHttpActionResult SubmitReview(int id, ReviewSubmitBindingModel bindModel) {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(m => m.Errors)
+                 .Select(e => e.ErrorMessage)
+                 .ToList();
+                bindModel.AddErrors(errors);
+                return BadRequest(bindModel.GetErrors());
+            }
+
             var currentUserId = User.Identity.GetUserId();
 
-            var review = UnitOfWork.Reviews.Get(id);
+            Review review;
 
-            if (review == null ||
-                !review.Reviewer.ApplicationUserId.Equals(currentUserId))
+            try
             {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+                review = UnitOfWork.Reviews.Get(id);
+
+                if (review == null ||
+                    !review.Reviewer.ApplicationUserId.Equals(currentUserId))
+                {
+                    return NotFound();
+                }
+
             }
+            catch (Exception ex)
+            {
+                return InternalServerError();
+            }
+
 
             review.Feedback = bindModel.Feedback;
             review.Rating = bindModel.Rating;
@@ -406,7 +533,14 @@ namespace Medium_Assignment.API.Controllers
             review.ModifiedBy = currentUserId;
             review.ModifiedOn = DateTime.Now;
 
-            UnitOfWork.Complete();
+            try
+            {
+                UnitOfWork.Complete();
+            }
+            catch (DbUpdateException ex)
+            {
+                return InternalServerError();
+            }
 
             return Ok();
         }
@@ -414,49 +548,52 @@ namespace Medium_Assignment.API.Controllers
 
         // DELETE api/reviews/5
         [HttpDelete]
+        [Authorize(Roles = "OrganizationAdmin")]
         public IHttpActionResult Delete(int id)
         {
             var currentUserId = User.Identity.GetUserId();
 
-            var organization = UnitOfWork.Organizations
+            Organization organization;
+            Review review;
+
+            try
+            {
+                organization = UnitOfWork.Organizations
                 .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
 
-            if (organization == null)
-            {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+                if (organization == null)
+                {
+                    return NotFound();
+                }
+
+                review = UnitOfWork.Reviews.Get(id);
+
+                if (review == null || review.OrganizationId != organization.Id)
+                {
+                    return NotFound();
+                }
             }
-
-            var review = UnitOfWork.Reviews.Get(id);
-
-            if (review == null || review.OrganizationId != organization.Id)
+            catch (Exception ex)
             {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+                return InternalServerError();
             }
 
             review.IsDeleted = true;
 
-            UnitOfWork.Complete();
+            try
+            {
+                UnitOfWork.Complete();
+            }
+            catch (DbUpdateException ex) {
+                return InternalServerError();
+            }
+            
 
             return Ok();
 
         }
 
-        //[NonAction]
-        //public void AddErrors(string error)
-        //{
-        //    ModelState.AddModelError("", error);
-        //}
-
-        //[NonAction]
-        //public void AddErrors(IEnumerable<string> errors)
-        //{
-        //    foreach (var error in errors)
-        //    {
-        //        ModelState.AddModelError("", error);
-        //    }
-        //}
+ 
 
     }
 }

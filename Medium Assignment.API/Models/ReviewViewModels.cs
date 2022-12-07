@@ -8,11 +8,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Medium_Assignment.API.Models
 {
-    public class ReviewListViewModel {
+    public class ReviewListViewModel: APIBindingModel {
 
         public List<ReviewGetViewModel> Reviews;
     }
-    public class ReviewGetViewModel
+    public class ReviewGetViewModel : APIBindingModel
     {
         public int Id { get; set; }
         public string Reviewer { get; set; }
@@ -48,7 +48,7 @@ namespace Medium_Assignment.API.Models
         public int? ReviewStatusId { get; set; }
     }
 
-    public class ReviewNewViewModel
+    public class ReviewNewViewModel : APIBindingModel
     {
         public string Agenda { get; set; }
 
@@ -69,7 +69,7 @@ namespace Medium_Assignment.API.Models
         public string Description { get; set; }
     }
 
-    public class ReviewEditViewModel
+    public class ReviewEditViewModel : APIBindingModel
     {
         [Required]
         public string Agenda { get; set; }
@@ -96,7 +96,8 @@ namespace Medium_Assignment.API.Models
         public string Description { get; set; }
     }
 
-    public class ReviewAssignBindingModel {
+    public class ReviewAssignBindingModel : APIBindingModel
+    {
         [Required]
         public int? ReviewerId { get; set; }
         
@@ -106,7 +107,7 @@ namespace Medium_Assignment.API.Models
 
     }
 
-    public class ReviewSubmitBindingModel
+    public class ReviewSubmitBindingModel : APIBindingModel
     {
         [Required]
         public int Rating { get; set; }

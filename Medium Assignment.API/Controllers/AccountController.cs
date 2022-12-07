@@ -143,7 +143,12 @@ namespace Medium_Assignment.API.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                var errors = ModelState.Values.SelectMany(m => m.Errors)
+                 .Select(e => e.ErrorMessage)
+                 .ToList();
+                model.AddErrors(errors);
+
+                return BadRequest(model.GetErrors());
             }
 
             IdentityResult result = await UserManager.ChangePasswordAsync(User.Identity.GetUserId(), model.OldPassword,
@@ -151,13 +156,17 @@ namespace Medium_Assignment.API.Controllers
             
             if (!result.Succeeded)
             {
-                return GetErrorResult(result);
+                model.AddErrors(result.Errors);
+                return BadRequest(model.GetErrors());
+
+                //return GetErrorResult(result);
             }
 
             return Ok();
         }
 
         // POST api/Account/SetPassword
+        [HttpPost]
         [Route("SetPassword")]
         public async Task<IHttpActionResult> SetPassword(SetPasswordBindingModel model)
         {

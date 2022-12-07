@@ -8,11 +8,12 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Medium_Assignment.API.Models
 {
-    public class EmployeeListViewModel
+    public class EmployeeListViewModel: APIBindingModel
     { 
         public List<EmployeeGetViewModel> Employees { get; set; }
     }
-    public class EmployeeGetViewModel {
+    public class EmployeeGetViewModel : APIBindingModel
+    {
 
         [Required]
         public int Id { get; set; }
@@ -99,7 +100,7 @@ namespace Medium_Assignment.API.Models
 
     }
 
-    public class EmployeePostViewModel
+    public class EmployeePostViewModel: APIBindingModel
     {
 
         [Required]
@@ -174,7 +175,7 @@ namespace Medium_Assignment.API.Models
 
     }
 
-    public class EmployeePutViewModel
+    public class EmployeePutViewModel: APIBindingModel
     {
 
         [Required]

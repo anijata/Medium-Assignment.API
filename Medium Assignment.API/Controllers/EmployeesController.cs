@@ -21,6 +21,7 @@ using Microsoft.Owin.Security.OAuth;
 using Medium_Assignment.API.Providers;
 using Medium_Assignment.API.Results;
 using Medium_Assignment.API.Repo;
+using System.Data.Entity.Infrastructure;
 
 namespace Medium_Assignment.API.Controllers
 {
@@ -56,19 +57,28 @@ namespace Medium_Assignment.API.Controllers
         // GET api/employees
         public IHttpActionResult Get()
         {
-            var currentUserId = User.Identity.GetUserId();
+            string currentUserId;
+            IEnumerable<Employee> employees;
+            Organization organization;
 
-            var organization = UnitOfWork.Organizations
+            try {
+                currentUserId = User.Identity.GetUserId();
+                organization = UnitOfWork.Organizations
                 .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
 
-            if (organization == null) {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
-            }
-                
-            var employees = UnitOfWork.Employees.List(c => c.OrganizationId == organization.Id);
+                if (organization == null)
+                {
+                    return NotFound();
+                }
 
-            var model = new EmployeeListViewModel { Employees = new List<EmployeeGetViewModel>()};
+                employees = UnitOfWork.Employees.List(c => c.OrganizationId == organization.Id);
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError();
+            }
+
+            var model = new EmployeeListViewModel { Employees = new List<EmployeeGetViewModel>() };
 
             foreach (var employee in employees) {
                 var modelemp = new EmployeeGetViewModel
@@ -109,25 +119,37 @@ namespace Medium_Assignment.API.Controllers
         // GET api/employees/5
         public IHttpActionResult Get(int id)
         {
-            var currentUserId = User.Identity.GetUserId();
+            string currentUserId;
+            Employee employee;
+            Organization organization;
 
-            var organization = UnitOfWork.Organizations
+            try
+            {
+                currentUserId = User.Identity.GetUserId();
+                organization = UnitOfWork.Organizations
                 .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
 
+                if (organization == null)
+                {
+                    return Unauthorized();
+                }
 
-            if (organization == null) {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+                employee = UnitOfWork.Employees.Get(id);
+
+                if (employee == null || employee.OrganizationId != organization.Id)
+                {
+                    return NotFound();
+                }
 
             }
-            var employee = UnitOfWork.Employees.Get(id);
-
-            if (employee == null || employee.OrganizationId != organization.Id) {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+            catch (Exception ex)
+            {
+                return InternalServerError();
             }
 
-             var model = new EmployeeGetViewModel { 
+            
+
+            var model = new EmployeeGetViewModel { 
                 Id = employee.Id,
                 FirstName = employee.FirstName,
                 LastName = employee.LastName,
@@ -164,23 +186,38 @@ namespace Medium_Assignment.API.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                var errors = ModelState.Values.SelectMany(m => m.Errors)
+                                 .Select(e => e.ErrorMessage)
+                                 .ToList();
+                model.AddErrors(errors);
+                return BadRequest(model.GetErrors());
 
             }
 
             var currentUserId = User.Identity.GetUserId();
 
-            var organization = UnitOfWork.Organizations
+            Organization organization;
+
+            try {
+
+                organization = UnitOfWork.Organizations
                 .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
 
 
+
+            }
+            catch (Exception ex) {
+                return InternalServerError();
+            }
+
+            
             var user = new ApplicationUser { UserName = model.UserName, Email = model.Email, PhoneNumber = model.PhoneNumber };
             var result = await UserManager.CreateAsync(user, model.Password);
 
             if (!result.Succeeded)
             {
-                //AddErrors(result.Errors);
-                return BadRequest(ModelState);
+                model.AddErrors(result.Errors);
+                return BadRequest(model.GetErrors());
             }
 
 
@@ -188,8 +225,8 @@ namespace Medium_Assignment.API.Controllers
 
             if (!result.Succeeded)
             {
-                //AddErrors(result.Errors);
-                return BadRequest(ModelState);
+                model.AddErrors(result.Errors);
+                return BadRequest(model.GetErrors());
             }
 
             var employee = new Employee { 
@@ -215,9 +252,18 @@ namespace Medium_Assignment.API.Controllers
                 ModifiedOn = DateTime.Now
             };
 
-            UnitOfWork.Employees.Add(employee);
+            try {
+                UnitOfWork.Employees.Add(employee);
 
-            UnitOfWork.Complete();
+                UnitOfWork.Complete();
+            }
+            catch (DbUpdateException ex)
+            {
+                return InternalServerError();
+            }
+
+
+            
 
             return Ok();
         }
@@ -226,29 +272,46 @@ namespace Medium_Assignment.API.Controllers
         [HttpPut]
         public async Task<IHttpActionResult> Put(int id, EmployeePutViewModel model)
         {
-            if (!ModelState.IsValid) {
-                return BadRequest(ModelState);
-            }               
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(m => m.Errors)
+                                 .Select(e => e.ErrorMessage)
+                                 .ToList();
+                model.AddErrors(errors);
+                return BadRequest(model.GetErrors());
+
+            }
 
             var currentUserId = User.Identity.GetUserId();
 
-            var organization = UnitOfWork.Organizations
-                .List(c => c.ApplicationUserId.Equals(currentUserId))
-                .FirstOrDefault();
+            Organization organization;
 
+            Employee employee;
 
-            if (organization == null) {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
-                
+            try
+            {
+
+                organization = UnitOfWork.Organizations
+                .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
+
+                if (organization == null)
+                {
+                    return NotFound();
+
+                }
+
+                employee = UnitOfWork.Employees.Get(id);
+
+                if (employee == null || employee.OrganizationId != organization.Id)
+                {
+                    return NotFound();
+
+                }
+
             }
-
-            var employee = UnitOfWork.Employees.Get(id);
-
-            if (employee == null || employee.OrganizationId != organization.Id) {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
-
+            catch (Exception ex)
+            {
+                return InternalServerError();
             }
 
             var user = UserManager.FindById(employee.ApplicationUserId);
@@ -259,9 +322,10 @@ namespace Medium_Assignment.API.Controllers
 
             var result = await UserManager.UpdateAsync(user);
 
-            if (!result.Succeeded) {
-                //AddErrors(result.Errors);
-                return BadRequest(ModelState);
+            if (!result.Succeeded)
+            {
+                model.AddErrors(result.Errors);
+                return BadRequest(model.GetErrors());
             }
 
             employee.FirstName = model.FirstName;
@@ -281,7 +345,16 @@ namespace Medium_Assignment.API.Controllers
             employee.ModifiedBy = currentUserId;
             employee.ModifiedOn = DateTime.Now;
 
-            UnitOfWork.Complete();
+            try
+            {
+                UnitOfWork.Complete();
+            }
+            catch (DbUpdateException ex) {
+
+                return InternalServerError();
+            } 
+
+            
 
             return Ok();
         }
@@ -289,47 +362,53 @@ namespace Medium_Assignment.API.Controllers
         // DELETE api/employees/5
         [HttpDelete]
         public IHttpActionResult Delete(int id)
-        { 
+        {
             var currentUserId = User.Identity.GetUserId();
 
-            var organization = UnitOfWork.Organizations
+            Organization organization;
+
+            Employee employee;
+
+            try
+            {
+
+                organization = UnitOfWork.Organizations
                 .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
 
+                if (organization == null)
+                {
+                    return NotFound();
 
-            if (organization == null)
-            {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+                }
+
+                employee = UnitOfWork.Employees.Get(id);
+
+                if (employee == null || employee.OrganizationId != organization.Id)
+                {
+                    return NotFound();
+
+                }
 
             }
-            var employee = UnitOfWork.Employees.Get(id);
-
-            if (employee == null || employee.OrganizationId != organization.Id)
+            catch (Exception ex)
             {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+                return InternalServerError();
             }
 
-            UnitOfWork.Employees.Remove(employee);
 
-            UnitOfWork.Complete();
+            try {
+                UnitOfWork.Employees.Remove(employee);
+
+                UnitOfWork.Complete();
+
+            } catch (DbUpdateException ex) {
+                return InternalServerError();
+            }
+
+
+
 
             return Ok();
         }
-
-        //[NonAction]
-        //public void AddErrors(string error)
-        //{
-        //    ModelState.AddModelError("", error);
-        //}
-
-        //[NonAction]
-        //public void AddErrors(IEnumerable<string> errors)
-        //{
-        //    foreach (var error in errors)
-        //    {
-        //        ModelState.AddModelError("", error);
-        //    }
-        //}
     }
 }

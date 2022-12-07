@@ -21,6 +21,7 @@ using Microsoft.Owin.Security.OAuth;
 using Medium_Assignment.API.Providers;
 using Medium_Assignment.API.Results;
 using Medium_Assignment.API.Repo;
+using System.Data.Entity.Infrastructure;
 
 namespace Medium_Assignment.API.Controllers
 {
@@ -55,17 +56,31 @@ namespace Medium_Assignment.API.Controllers
         public IHttpActionResult Get()
         {
             var currentUserId = User.Identity.GetUserId();
-            var organization = UnitOfWork.Organizations
+
+            Organization organization;
+            IEnumerable<Department> departments;
+
+            try
+            {
+
+                organization = UnitOfWork.Organizations
                 .List(c => c.ApplicationUserId.Equals(currentUserId))
                 .FirstOrDefault();
 
-            if (organization == null) {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+                if (organization == null)
+                {
+                    return NotFound();
+                }
+
+                departments = UnitOfWork.Departments.List(c => c.OrganizationId == organization.Id);
+
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError();
             }
 
-            var departments = UnitOfWork.Departments.List(c => c.OrganizationId == organization.Id);
-
+            
             var model = new DepartmentListViewModel
             {
 
@@ -97,22 +112,31 @@ namespace Medium_Assignment.API.Controllers
         {
             var currentUserId = User.Identity.GetUserId();
 
-            var organization = UnitOfWork.Organizations
+            Organization organization;
+            Department department;
+
+            try
+            {
+
+                organization = UnitOfWork.Organizations
                 .List(c => c.ApplicationUserId.Equals(currentUserId))
                 .FirstOrDefault();
 
-            if (organization == null) {
+                if (organization == null)
+                {
+                    return NotFound();
+                }
 
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+                department = UnitOfWork.Departments.Get(id);
 
+                if (department == null || department.OrganizationId != organization.Id)
+                {
+                    return NotFound();
+                }
             }
-
-            var department = UnitOfWork.Departments.Get(id);
-
-            if (department == null || department.OrganizationId != organization.Id) {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+            catch (Exception ex)
+            {
+                return InternalServerError();
             }
 
             var model = new DepartmentGetViewModel { 
@@ -131,18 +155,31 @@ namespace Medium_Assignment.API.Controllers
         public IHttpActionResult Post(DepartmentPostViewModel model)
         {
             if (!ModelState.IsValid) {
-                
+                var errors = ModelState.Values.SelectMany(m => m.Errors)
+                                 .Select(e => e.ErrorMessage)
+                                 .ToList();
+                model.AddErrors(errors);
+                return BadRequest(model.GetErrors());
             }
 
             var currentUserId = User.Identity.GetUserId();
 
-            var organization = UnitOfWork.Organizations
+            Organization organization = new Organization();
+
+            try
+            {
+                organization = UnitOfWork.Organizations
                   .List(c => c.ApplicationUserId.Equals(currentUserId))
                   .FirstOrDefault();
+            }
+            catch (Exception ex) {
+                return InternalServerError();
+            }
+
+            
 
             if (organization == null) {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+                return NotFound();
             }
 
             var department = new Department { 
@@ -157,7 +194,18 @@ namespace Medium_Assignment.API.Controllers
 
             UnitOfWork.Departments.Add(department);
 
-            UnitOfWork.Complete();
+
+            try
+            {
+                UnitOfWork.Complete();
+            }
+            catch (DbUpdateException ex)
+            {
+
+                return InternalServerError();
+            }
+
+
 
             return Ok();
         }
@@ -169,24 +217,39 @@ namespace Medium_Assignment.API.Controllers
 
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                var errors = ModelState.Values.SelectMany(m => m.Errors)
+                                 .Select(e => e.ErrorMessage)
+                                 .ToList();
+                model.AddErrors(errors);
+                return BadRequest(model.GetErrors());
             }
 
             var currentUserId = User.Identity.GetUserId();
-            var organization = UnitOfWork.Organizations
-                  .List(c => c.ApplicationUserId.Equals(currentUserId))
-                  .FirstOrDefault();
+            Organization organization;
+            Department department;
 
-            if (organization == null) {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);               
+            try
+            {
+
+                organization = UnitOfWork.Organizations
+                .List(c => c.ApplicationUserId.Equals(currentUserId))
+                .FirstOrDefault();
+
+                if (organization == null)
+                {
+                    return NotFound();
+                }
+
+                department = UnitOfWork.Departments.Get(id);
+
+                if (department == null || department.OrganizationId != organization.Id)
+                {
+                    return NotFound();
+                }
             }
-
-            var department = UnitOfWork.Departments.Get(id);
-
-            if (department == null || department.OrganizationId != organization.Id) {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+            catch (Exception ex)
+            {
+                return InternalServerError();
             }
 
             department.Name = model.Name;
@@ -195,8 +258,11 @@ namespace Medium_Assignment.API.Controllers
             department.ModifiedBy = currentUserId;
             department.ModifiedOn = DateTime.Now;
 
-            UnitOfWork.Complete();
-
+            try {
+                UnitOfWork.Complete();
+            } catch (DbUpdateException) {
+                return InternalServerError();
+            }
 
             return Ok();
         }
@@ -206,45 +272,46 @@ namespace Medium_Assignment.API.Controllers
         public IHttpActionResult Delete(int id)
         {
             var currentUserId = User.Identity.GetUserId();
-            var organization = UnitOfWork.Organizations
-                  .List(c => c.ApplicationUserId.Equals(currentUserId))
-                  .FirstOrDefault();
+            Organization organization;
+            Department department;
 
-            if (organization == null)
+            try
             {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+
+                organization = UnitOfWork.Organizations
+                .List(c => c.ApplicationUserId.Equals(currentUserId))
+                .FirstOrDefault();
+
+                if (organization == null)
+                {
+                    return NotFound();
+                }
+
+                department = UnitOfWork.Departments.Get(id);
+
+                if (department == null || department.OrganizationId != organization.Id)
+                {
+                    return NotFound();
+                }
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError();
             }
 
-
-            var department = UnitOfWork.Departments.Get(id);
-
-            if (department == null || department.OrganizationId != organization.Id)
+            try
             {
-                //AddErrors("Resource not found");
-                return BadRequest(ModelState);
+                UnitOfWork.Departments.Remove(department);
+
+                UnitOfWork.Complete();
             }
-
-            UnitOfWork.Departments.Remove(department);
-
-            UnitOfWork.Complete();
+            catch (DbUpdateException)
+            {
+                return InternalServerError();
+            }
 
             return Ok();
         }
 
-        //[NonAction]
-        //public void AddErrors(string error)
-        //{
-        //    ModelState.AddModelError("", error);
-        //}
-
-        //[NonAction]
-        //public void AddErrors(IEnumerable<string> errors)
-        //{
-        //    foreach (var error in errors)
-        //    {
-        //        ModelState.AddModelError("", error);
-        //    }
-        //}
     }
 }
