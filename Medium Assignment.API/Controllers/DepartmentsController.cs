@@ -52,6 +52,11 @@ namespace Medium_Assignment.API.Controllers
             }
         }
 
+        /*
+         Gets all departments associated with the organization
+        the user (organization admin) is associated.
+         */
+
         // GET api/departments
         public IHttpActionResult Get()
         {
@@ -62,7 +67,8 @@ namespace Medium_Assignment.API.Controllers
 
             try
             {
-
+                //Get organizaition associated with the user (organization admin).
+                //This is to determine if the user is authorized to interact with these departments.
                 organization = UnitOfWork.Organizations
                 .List(c => c.ApplicationUserId.Equals(currentUserId))
                 .FirstOrDefault();
@@ -72,6 +78,7 @@ namespace Medium_Assignment.API.Controllers
                     return NotFound();
                 }
 
+                // Get departments associated with this organization.
                 departments = UnitOfWork.Departments.List(c => c.OrganizationId == organization.Id);
 
             }
@@ -80,7 +87,7 @@ namespace Medium_Assignment.API.Controllers
                 return InternalServerError();
             }
 
-            
+            // Populate binding model with data from departments. 
             var model = new DepartmentListViewModel
             {
 
@@ -107,7 +114,13 @@ namespace Medium_Assignment.API.Controllers
             return Ok(model);
         }
 
-        // GET api/departments/5
+
+
+        /*
+         Gets record of department given id and associated with the organization
+        the user (organization admin) is associated.
+         */
+        // GET api/departments/{id}
         public IHttpActionResult Get(int id)
         {
             var currentUserId = User.Identity.GetUserId();
@@ -117,7 +130,8 @@ namespace Medium_Assignment.API.Controllers
 
             try
             {
-
+                //Get organizaition associated with the user (organization admin).
+                //This is to determine if the user is authorized to interact with these departments.
                 organization = UnitOfWork.Organizations
                 .List(c => c.ApplicationUserId.Equals(currentUserId))
                 .FirstOrDefault();
@@ -127,6 +141,7 @@ namespace Medium_Assignment.API.Controllers
                     return NotFound();
                 }
 
+                // Get department associated with this id and organization.
                 department = UnitOfWork.Departments.Get(id);
 
                 if (department == null || department.OrganizationId != organization.Id)
@@ -152,8 +167,13 @@ namespace Medium_Assignment.API.Controllers
         }
 
         // POST api/departments
+        /*
+         Inserts a record of department and associated with the organization
+        the user (organization admin) is associated.
+         */
         public IHttpActionResult Post(DepartmentPostViewModel model)
         {
+            //Check for model invalidation.
             if (!ModelState.IsValid) {
                 var errors = ModelState.Values.SelectMany(m => m.Errors)
                                  .Select(e => e.ErrorMessage)
@@ -168,6 +188,8 @@ namespace Medium_Assignment.API.Controllers
 
             try
             {
+                //Get organizaition associated with the user (organization admin).
+                //This is to determine if the user is authorized to interact with these departments.
                 organization = UnitOfWork.Organizations
                   .List(c => c.ApplicationUserId.Equals(currentUserId))
                   .FirstOrDefault();
@@ -192,11 +214,11 @@ namespace Medium_Assignment.API.Controllers
             department.ModifiedBy = currentUserId;
             department.ModifiedOn = DateTime.Now;
 
-            UnitOfWork.Departments.Add(department);
 
-
+            // Update Department record to DB.
             try
             {
+                UnitOfWork.Departments.Add(department);
                 UnitOfWork.Complete();
             }
             catch (DbUpdateException ex)
@@ -211,9 +233,14 @@ namespace Medium_Assignment.API.Controllers
         }
 
         // PUT api/departments/5
+        /*
+        Update record of department given id and associated with the organization
+       the user (organization admin) is associated.
+        */
         [HttpPut]
         public IHttpActionResult Put(int id, DepartmentPutViewModel model)
         {
+            //Check for model invalidation.
 
             if (!ModelState.IsValid)
             {
@@ -230,7 +257,8 @@ namespace Medium_Assignment.API.Controllers
 
             try
             {
-
+                //Get organizaition associated with the user (organization admin).
+                //This is to determine if the user is authorized to interact with these departments.
                 organization = UnitOfWork.Organizations
                 .List(c => c.ApplicationUserId.Equals(currentUserId))
                 .FirstOrDefault();
@@ -240,6 +268,7 @@ namespace Medium_Assignment.API.Controllers
                     return NotFound();
                 }
 
+                // Get department associated with this id and organization.
                 department = UnitOfWork.Departments.Get(id);
 
                 if (department == null || department.OrganizationId != organization.Id)
@@ -258,6 +287,7 @@ namespace Medium_Assignment.API.Controllers
             department.ModifiedBy = currentUserId;
             department.ModifiedOn = DateTime.Now;
 
+            // Update Department record in DB.
             try {
                 UnitOfWork.Complete();
             } catch (DbUpdateException) {
@@ -268,6 +298,10 @@ namespace Medium_Assignment.API.Controllers
         }
 
         // DELETE api/departments/5
+        /*
+       Delete record of department given id and associated with the organization
+      the user (organization admin) is associated.
+       */
         [HttpDelete]
         public IHttpActionResult Delete(int id)
         {
@@ -277,6 +311,8 @@ namespace Medium_Assignment.API.Controllers
 
             try
             {
+                //Get organizaition associated with the user (organization admin).
+                //This is to determine if the user is authorized to interact with these departments.
 
                 organization = UnitOfWork.Organizations
                 .List(c => c.ApplicationUserId.Equals(currentUserId))
@@ -287,6 +323,7 @@ namespace Medium_Assignment.API.Controllers
                     return NotFound();
                 }
 
+                // Get department associated with this id and organization.
                 department = UnitOfWork.Departments.Get(id);
 
                 if (department == null || department.OrganizationId != organization.Id)
@@ -299,6 +336,7 @@ namespace Medium_Assignment.API.Controllers
                 return InternalServerError();
             }
 
+            // Soft Delete Department record in DB.
             try
             {
                 UnitOfWork.Departments.Remove(department);

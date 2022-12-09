@@ -51,13 +51,20 @@ namespace Medium_Assignment.API.Controllers
             }
         }
 
+
         // GET: api/Organizations
+        /*
+         * 
+         Gets list of organizations from database
+        and returns binding model containing the list of organizations.
+         */
         public IHttpActionResult Get()
         {
             IEnumerable<Organization> organizations= new List<Organization>();
 
             try
             {
+                // Get list of organizations from repo.
                 organizations = UnitOfWork.Organizations.List();
 
             }
@@ -68,6 +75,7 @@ namespace Medium_Assignment.API.Controllers
 
             var model = new OrganizationListViewModel { Organizations = new List<OrganizationGetViewModel>()};
 
+            // populate binding model with organizations and their fields.
             foreach (var organization in organizations) {
                 var modelOrg = new OrganizationGetViewModel
                 {
@@ -95,13 +103,21 @@ namespace Medium_Assignment.API.Controllers
             return Ok(model);
         }
 
+
         // GET: api/Organizations/5
+
+        /*
+         Gets organization assoicated with input id
+        from database and returns binding model
+        containing the organizaiton.
+         */
         public IHttpActionResult Get(int id)
         {
             var organization = new Organization();
 
             try
             {
+                // Get organizaiton from repo 
                 organization = UnitOfWork.Organizations.Get(id);
 
             }
@@ -116,7 +132,7 @@ namespace Medium_Assignment.API.Controllers
                 return NotFound();
             }
                 
-
+            // populate binding model with organization fields
             var model = new OrganizationGetViewModel { 
                 Id = organization.Id,
                 Name = organization.Name,
@@ -142,8 +158,12 @@ namespace Medium_Assignment.API.Controllers
 
         // POST: api/Organizations
         [HttpPost]
+        /*
+         Post request to insert a new Organization record on DB
+         */
         public async Task<IHttpActionResult> Post(OrganizationPostViewModel model) 
         {
+            // Check for model invalidations.
             if (!ModelState.IsValid) {
                 var errors =ModelState.Values.SelectMany(m => m.Errors)
                                  .Select(e => e.ErrorMessage)
@@ -151,19 +171,19 @@ namespace Medium_Assignment.API.Controllers
                 model.AddErrors(errors);
                 return BadRequest(model.GetErrors());
             }
-                
 
+            // Create a new user associated with the new organization.
+            // Return error message if not successfull.
             var user = new ApplicationUser { UserName = model.UserName, Email = model.Email, PhoneNumber = model.PhoneNumber };
             var result = await UserManager.CreateAsync(user, model.Password);
-
             if (!result.Succeeded) {
                 model.AddErrors(result.Errors);
                 return BadRequest(model.GetErrors());
             }
-            
+
+            // Adds user to organization admin role
 
             result = await UserManager.AddToRoleAsync(user.Id, "OrganizationAdmin");
-
             if (!result.Succeeded)
             {
                 model.AddErrors(result.Errors);
@@ -189,6 +209,8 @@ namespace Medium_Assignment.API.Controllers
 
             try
             {
+                // Adds organization record to DB.
+
                 UnitOfWork.Organizations.Add(organization);
 
                 UnitOfWork.Complete();
@@ -203,9 +225,13 @@ namespace Medium_Assignment.API.Controllers
         }
 
         // PUT: api/Organizations/5
+        /*
+         Put request to update an Organization record on DB
+         */
         [HttpPut]
         public async Task<IHttpActionResult> Put(int id, OrganizationPutViewModel model) {
 
+            // Check for model invalidations.
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(m => m.Errors)
@@ -219,6 +245,7 @@ namespace Medium_Assignment.API.Controllers
 
             try
             {
+                // Get organizaiton from DB repo.
                 organization = UnitOfWork.Organizations.Get(id);
             }
             catch (Exception ex)
@@ -230,13 +257,15 @@ namespace Medium_Assignment.API.Controllers
                 return NotFound();
             }
                 
-
+            // Get user record associated with this organization.
             var user = UserManager.FindById(organization.ApplicationUserId);
 
             user.UserName = model.UserName;
             user.PhoneNumber = model.PhoneNumber;
             user.Email = model.Email;
 
+            // Update any new Get user record associated with this organization.
+            // Return error message if the update is unsuccessfull.
             var result = await UserManager.UpdateAsync(user);
 
             if (!result.Succeeded) {
@@ -258,6 +287,7 @@ namespace Medium_Assignment.API.Controllers
 
             try
             {
+                // Update the organization record in DB.
                 UnitOfWork.Complete();
             }
             catch (DbUpdateException ex)
@@ -276,7 +306,12 @@ namespace Medium_Assignment.API.Controllers
             var organization = new Organization();
 
             try {
+                // Get organizaiton from DB repo.
                 organization = UnitOfWork.Organizations.Get(id);
+                if (organization == null)
+                {
+                    return NotFound();
+                }
             }     
             catch (Exception ex)
             {
@@ -284,13 +319,11 @@ namespace Medium_Assignment.API.Controllers
             }
 
 
-            if (organization == null)
-            {
-                return NotFound();
-            }
+            
 
             try
             {
+                // Soft delete organization from DB
                 UnitOfWork.Organizations.Remove(organization);
 
                 UnitOfWork.Complete();

@@ -53,8 +53,13 @@ namespace Medium_Assignment.API.Controllers
             }
         }
 
+        /*
+         Gets records of employees associated with the organization
+        the user (organization admin) is associated.
+         */
 
         // GET api/employees
+
         public IHttpActionResult Get()
         {
             string currentUserId;
@@ -115,6 +120,11 @@ namespace Medium_Assignment.API.Controllers
 
             return Ok(model);
         }
+
+        /*
+         Gets record of employee given id and associated with the organization
+        the user (organization admin) is associated.
+         */
 
         // GET api/employees/5
         public IHttpActionResult Get(int id)
@@ -180,6 +190,11 @@ namespace Medium_Assignment.API.Controllers
             return Ok(model);
         }
 
+
+        /*
+         Inserts new record of employee given id and associated with the organization
+        the user (organization admin) is associated.
+         */
         // POST api/employees
         [HttpPost]
         public async Task<IHttpActionResult> Post(EmployeePostViewModel model)
@@ -267,6 +282,12 @@ namespace Medium_Assignment.API.Controllers
 
             return Ok();
         }
+
+
+        /*
+         Updates a record of employee given id and associated with the organization
+        the user (organization admin) is associated.
+         */
 
         // PUT api/employees/5
         [HttpPut]
@@ -358,6 +379,11 @@ namespace Medium_Assignment.API.Controllers
 
             return Ok();
         }
+
+        /*
+         Deletes a record of employee given id and associated with the organization
+        the user (organization admin) is associated.
+         */
 
         // DELETE api/employees/5
         [HttpDelete]

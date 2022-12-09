@@ -52,7 +52,13 @@ namespace Medium_Assignment.API.Controllers
             }
         }
 
+
         [Authorize(Roles = "OrganizationAdmin")]
+        /*
+         Gets records of reviews associated with the organization
+        the user (organization admin) is associated.
+         */
+
         // GET api/reviews
         public IHttpActionResult Get()
         {
@@ -114,6 +120,10 @@ namespace Medium_Assignment.API.Controllers
         }
 
         [Authorize(Roles = "OrganizationAdmin")]
+        /*
+        Gets record of review given id associated with the organization
+        the user (organization admin) is associated.
+        */
         // GET api/reviews/{id}
         public IHttpActionResult Get(int id)
         {
@@ -169,6 +179,10 @@ namespace Medium_Assignment.API.Controllers
             return Ok(model);
         }
 
+        /*
+        Gets an assigned review given an id assoicated
+        with user (Employee role) who is a reviewer.     
+        */
         [HttpGet]
         [Authorize(Roles = "Employee")]
         [Route("api/reviews/assigned/{id}")]
@@ -220,6 +234,10 @@ namespace Medium_Assignment.API.Controllers
 
         }
 
+        /*
+        Gets aall assigned review assoicated
+        with user (Employee role) who is a reviewer.     
+        */
 
         [HttpGet]
         [Route("api/reviews/assigned")]
@@ -278,6 +296,10 @@ namespace Medium_Assignment.API.Controllers
         
         }
 
+        /*
+        Creates a new Review under the organizaiton that
+        the user (OrganizationAdmin) is associated with.
+        */
         [Authorize(Roles = "OrganizationAdmin")]
         // POST api/reviews
         [Route("api/reviews/new")]
@@ -345,6 +367,10 @@ namespace Medium_Assignment.API.Controllers
             return Ok();
         }
 
+        /*
+        Edits a Review given id under the organizaiton that
+        the user (OrganizationAdmin) is associated with.
+        */
         [Authorize(Roles = "OrganizationAdmin")]
         [HttpPut]
         [Route("api/reviews/edit/{id}")]
@@ -408,6 +434,10 @@ namespace Medium_Assignment.API.Controllers
 
         }
 
+        /*
+        Assigns a Review given id under the organizaiton that
+        the user (OrganizationAdmin) is associated with.
+        */
         [Authorize(Roles = "OrganizationAdmin")]
         [HttpPut]
         [Route("api/reviews/assign/{id}")]
@@ -492,7 +522,9 @@ namespace Medium_Assignment.API.Controllers
             return Ok();
         }
 
-
+        /*
+        Submits a Review given id and the user (Employee) is the Reviewer associated with.
+        */
         [Authorize(Roles = "Employee")]
         [HttpPut]
         [Route("api/reviews/submit/{id}")]
@@ -545,7 +577,10 @@ namespace Medium_Assignment.API.Controllers
             return Ok();
         }
 
-
+        /*
+        Deletes a Review given id under the organizaiton that
+        the user (OrganizationAdmin) is associated with.
+        */
         // DELETE api/reviews/5
         [HttpDelete]
         [Authorize(Roles = "OrganizationAdmin")]
