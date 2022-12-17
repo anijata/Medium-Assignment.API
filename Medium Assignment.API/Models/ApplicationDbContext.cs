@@ -8,19 +8,41 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Entity;
 using System.Linq;
 
+
 namespace Medium_Assignment.API.Models
 {
+    public class ApplicationDbContextInitializer : DropCreateDatabaseAlways<ApplicationDbContext>
+    {
+        protected override void Seed(ApplicationDbContext context)
+        {
+            var seedData = new SeedData(context);
+            seedData.SeedCountries();
+            seedData.SeedStates();
+            seedData.SeedCities();
+            seedData.SeedRoles();
+            seedData.SeedUsers();
+            seedData.SeedOrganizations();
+            seedData.SeedDepartments();
+            seedData.SeedEmployees();
+            seedData.SeedReviews();
+            base.Seed(context);
+        }
+    }
+
+
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         public ApplicationDbContext()
             : base("DefaultConnection", throwIfV1Schema: false)
         {
+            Database.SetInitializer(new ApplicationDbContextInitializer());
         }
 
         public static ApplicationDbContext Create()
         {
             return new ApplicationDbContext();
         }
+
 
         public DbSet<City> Cities { get; set; }
 
@@ -32,7 +54,6 @@ namespace Medium_Assignment.API.Models
         public DbSet<Review> Reviews { get; set; }
         public DbSet<ReviewStatus> ReviewStatuses { get; set; }
         public DbSet<State> States { get; set; }
-
 
     }
 }

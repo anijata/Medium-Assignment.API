@@ -29,6 +29,8 @@ namespace Medium_Assignment.API.Repo
 
             return organization;
         }
+
+
         public override IEnumerable<Organization> List()
         {
             var organizations = DbContext.Organizations
