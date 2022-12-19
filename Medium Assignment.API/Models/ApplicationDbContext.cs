@@ -21,6 +21,7 @@ namespace Medium_Assignment.API.Models
             seedData.SeedCities();
             seedData.SeedRoles();
             seedData.SeedUsers();
+            seedData.SeedReviewStatuses();
             seedData.SeedOrganizations();
             seedData.SeedDepartments();
             seedData.SeedEmployees();

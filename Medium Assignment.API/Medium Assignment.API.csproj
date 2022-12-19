@@ -229,6 +229,10 @@
     <Compile Include="Migrations\202211250756469_RemovedRemoveEmployyes.Designer.cs">
       <DependentUpon>202211250756469_RemovedRemoveEmployyes.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\202212190720437_employeeAddress2Changes.cs" />
+    <Compile Include="Migrations\202212190720437_employeeAddress2Changes.Designer.cs">
+      <DependentUpon>202212190720437_employeeAddress2Changes.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Models\AccountBindingModels.cs" />
     <Compile Include="Models\AccountViewModels.cs" />
@@ -365,6 +369,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\202211250756469_RemovedRemoveEmployyes.resx">
       <DependentUpon>202211250756469_RemovedRemoveEmployyes.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202212190720437_employeeAddress2Changes.resx">
+      <DependentUpon>202212190720437_employeeAddress2Changes.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
