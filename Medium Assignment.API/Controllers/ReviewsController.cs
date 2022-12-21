@@ -119,41 +119,56 @@ namespace Medium_Assignment.API.Controllers
 
         }
 
-        [Authorize(Roles = "OrganizationAdmin")]
+        [Authorize(Roles = "OrganizationAdmin, Employee")]
         /*
         Gets record of review given id associated with the organization
-        the user (organization admin) is associated.
+        the user (organization admin or employee) is associated.
         */
         // GET api/reviews/{id}
         public IHttpActionResult Get(int id)
         {
             var currentUserId = User.Identity.GetUserId();
-            Organization organization;
-            Review review;
+            var review = new Review();
 
-            try
-            {
-                organization = UnitOfWork.Organizations
-                .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
+            try {
 
-                if (organization == null)
+                if (User.IsInRole("OrganizationAdmin"))
                 {
-                    return NotFound();
+
+                    var organization = UnitOfWork.Organizations
+                        .List(c => c.ApplicationUserId.Equals(currentUserId)).FirstOrDefault();
+
+                    if (organization == null)
+                    {
+                        return NotFound();
+                    }
+
+                    review = UnitOfWork.Reviews.Get(id);
+
+                    if (review == null || review.OrganizationId != organization.Id)
+                    {
+                        return NotFound();
+                    }
+
+
+                }
+                else if (User.IsInRole("Employee"))
+                {
+                    review = UnitOfWork.Reviews.Get(id);
+
+                    if (review == null ||
+                        !review.Reviewer.ApplicationUserId.Equals(currentUserId))
+                    {
+                        return NotFound();
+                    }
+
                 }
 
-                review = UnitOfWork.Reviews.Get(id);
-
-                if (review == null || review.OrganizationId != organization.Id)
-                {
-                    return NotFound();
-                }
             }
             catch (Exception ex)
             {
                 return InternalServerError();
             }
-
-            
 
             var model = new ReviewGetViewModel {
                 Id = id,
@@ -183,56 +198,56 @@ namespace Medium_Assignment.API.Controllers
         Gets an assigned review given an id assoicated
         with user (Employee role) who is a reviewer.     
         */
-        [HttpGet]
-        [Authorize(Roles = "Employee")]
-        [Route("api/reviews/assigned/{id}")]
-        public IHttpActionResult AssignedReview(int id)
-        {
+        //[HttpGet]
+        //[Authorize(Roles = "Employee")]
+        //[Route("api/reviews/assigned/{id}")]
+        //public IHttpActionResult AssignedReview(int id)
+        //{
 
-            var currentUserId = User.Identity.GetUserId();
+        //    var currentUserId = User.Identity.GetUserId();
 
-            Review review;
+        //    Review review;
 
-            try {
-                review = UnitOfWork.Reviews.Get(id);
+        //    try {
+        //        review = UnitOfWork.Reviews.Get(id);
 
-                if (review == null ||
-                    !review.Reviewer.ApplicationUserId.Equals(currentUserId))
-                {
-                    return NotFound();
-                }
+        //        if (review == null ||
+        //            !review.Reviewer.ApplicationUserId.Equals(currentUserId))
+        //        {
+        //            return NotFound();
+        //        }
 
-            } catch (Exception ex) { 
-                return InternalServerError();
-            }
+        //    } catch (Exception ex) { 
+        //        return InternalServerError();
+        //    }
 
             
 
-            var model = new ReviewGetViewModel
-            {
-                Id = id,
-                Agenda = review.Agenda,
-                Description = review.Description,
-                EmployeeId = review.EmployeeId ?? 0,
-                Employee = (review.Employee == null) ? "" : $"{review.Employee.FirstName}, {review.Employee.LastName}",
-                Feedback = review.Feedback,
-                MaxRate = review.MaxRate,
-                MinRate = review.MinRate,
-                OrganizationId = review.OrganizationId,
-                Rating = review.Rating,
-                ReviewCycleStartDate = review.ReviewCycleStartDate,
-                ReviewCycleEndDate = review.ReviewCycleStartDate,
-                Reviewer = (review.Reviewer == null) ? "" : $"{review.Reviewer.FirstName}, {review.Reviewer.LastName}",
-                ReviewerId = review.ReviewerId ?? 0,
-                ReviewStatus = review.ReviewStatus.Name,
-                ReviewStatusId = review.ReviewStatusId
+        //    var model = new ReviewGetViewModel
+        //    {
+        //        Id = id,
+        //        Agenda = review.Agenda,
+        //        Description = review.Description,
+        //        EmployeeId = review.EmployeeId ?? 0,
+        //        Employee = (review.Employee == null) ? "" : $"{review.Employee.FirstName}, {review.Employee.LastName}",
+        //        Feedback = review.Feedback,
+        //        MaxRate = review.MaxRate,
+        //        MinRate = review.MinRate,
+        //        OrganizationId = review.OrganizationId,
+        //        Rating = review.Rating,
+        //        ReviewCycleStartDate = review.ReviewCycleStartDate,
+        //        ReviewCycleEndDate = review.ReviewCycleStartDate,
+        //        Reviewer = (review.Reviewer == null) ? "" : $"{review.Reviewer.FirstName}, {review.Reviewer.LastName}",
+        //        ReviewerId = review.ReviewerId ?? 0,
+        //        ReviewStatus = review.ReviewStatus.Name,
+        //        ReviewStatusId = review.ReviewStatusId
 
-            };
+        //    };
 
 
-            return Ok(model);
+        //    return Ok(model);
 
-        }
+        //}
 
         /*
         Gets aall assigned review assoicated
