@@ -78,7 +78,8 @@ namespace Medium_Assignment.API.Controllers
                 reviews = UnitOfWork.Reviews.List(c => organization.Id == c.OrganizationId);
 
             }
-            catch (Exception ex) { 
+            catch (Exception ex) {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -167,6 +168,7 @@ namespace Medium_Assignment.API.Controllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -194,60 +196,6 @@ namespace Medium_Assignment.API.Controllers
             return Ok(model);
         }
 
-        /*
-        Gets an assigned review given an id assoicated
-        with user (Employee role) who is a reviewer.     
-        */
-        //[HttpGet]
-        //[Authorize(Roles = "Employee")]
-        //[Route("api/reviews/assigned/{id}")]
-        //public IHttpActionResult AssignedReview(int id)
-        //{
-
-        //    var currentUserId = User.Identity.GetUserId();
-
-        //    Review review;
-
-        //    try {
-        //        review = UnitOfWork.Reviews.Get(id);
-
-        //        if (review == null ||
-        //            !review.Reviewer.ApplicationUserId.Equals(currentUserId))
-        //        {
-        //            return NotFound();
-        //        }
-
-        //    } catch (Exception ex) { 
-        //        return InternalServerError();
-        //    }
-
-            
-
-        //    var model = new ReviewGetViewModel
-        //    {
-        //        Id = id,
-        //        Agenda = review.Agenda,
-        //        Description = review.Description,
-        //        EmployeeId = review.EmployeeId ?? 0,
-        //        Employee = (review.Employee == null) ? "" : $"{review.Employee.FirstName}, {review.Employee.LastName}",
-        //        Feedback = review.Feedback,
-        //        MaxRate = review.MaxRate,
-        //        MinRate = review.MinRate,
-        //        OrganizationId = review.OrganizationId,
-        //        Rating = review.Rating,
-        //        ReviewCycleStartDate = review.ReviewCycleStartDate,
-        //        ReviewCycleEndDate = review.ReviewCycleStartDate,
-        //        Reviewer = (review.Reviewer == null) ? "" : $"{review.Reviewer.FirstName}, {review.Reviewer.LastName}",
-        //        ReviewerId = review.ReviewerId ?? 0,
-        //        ReviewStatus = review.ReviewStatus.Name,
-        //        ReviewStatusId = review.ReviewStatusId
-
-        //    };
-
-
-        //    return Ok(model);
-
-        //}
 
         /*
         Gets aall assigned review assoicated
@@ -269,6 +217,7 @@ namespace Medium_Assignment.API.Controllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -344,6 +293,7 @@ namespace Medium_Assignment.API.Controllers
                     return NotFound();
                 }
             } catch (Exception ex) {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -374,6 +324,7 @@ namespace Medium_Assignment.API.Controllers
 
             }
             catch (DbUpdateException ex) {
+                Console.WriteLine(ex);
                 return InternalServerError();            
             }
 
@@ -423,6 +374,7 @@ namespace Medium_Assignment.API.Controllers
                 }
             }
             catch (Exception ex) {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -440,6 +392,7 @@ namespace Medium_Assignment.API.Controllers
             }
             catch (DbUpdateException ex)
             {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -492,6 +445,7 @@ namespace Medium_Assignment.API.Controllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -530,6 +484,7 @@ namespace Medium_Assignment.API.Controllers
             }
             catch (DbUpdateException ex)
             {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -570,6 +525,7 @@ namespace Medium_Assignment.API.Controllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -586,6 +542,7 @@ namespace Medium_Assignment.API.Controllers
             }
             catch (DbUpdateException ex)
             {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -625,6 +582,7 @@ namespace Medium_Assignment.API.Controllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -635,6 +593,7 @@ namespace Medium_Assignment.API.Controllers
                 UnitOfWork.Complete();
             }
             catch (DbUpdateException ex) {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
             

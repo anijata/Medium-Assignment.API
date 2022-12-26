@@ -87,7 +87,7 @@ namespace Medium_Assignment.API
         {
             var user = new ApplicationUser() { UserName = "admin", Email = "admin@issq.com" };
 
-            this.UserManager.Create(user, "$AdminPassword123");
+            this.UserManager.Create(user, "$DefaultPassword123");
 
             this.UserManager.AddToRole(user.Id, "SuperAdmin");
 

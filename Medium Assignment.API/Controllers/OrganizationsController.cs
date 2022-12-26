@@ -69,6 +69,7 @@ namespace Medium_Assignment.API.Controllers
 
             }
             catch (Exception ex) {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
             
@@ -123,7 +124,7 @@ namespace Medium_Assignment.API.Controllers
             }
             catch (Exception ex)
             {
-
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -216,6 +217,7 @@ namespace Medium_Assignment.API.Controllers
                 UnitOfWork.Complete();
             }
             catch (DbUpdateException ex) {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -250,6 +252,8 @@ namespace Medium_Assignment.API.Controllers
             }
             catch (Exception ex)
             {
+
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -292,6 +296,7 @@ namespace Medium_Assignment.API.Controllers
             }
             catch (DbUpdateException ex)
             {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -315,6 +320,7 @@ namespace Medium_Assignment.API.Controllers
             }     
             catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -330,6 +336,7 @@ namespace Medium_Assignment.API.Controllers
             }
             catch (DbUpdateException ex)
             {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 

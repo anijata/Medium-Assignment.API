@@ -84,6 +84,7 @@ namespace Medium_Assignment.API.Controllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -151,6 +152,7 @@ namespace Medium_Assignment.API.Controllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -195,6 +197,7 @@ namespace Medium_Assignment.API.Controllers
                   .FirstOrDefault();
             }
             catch (Exception ex) {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -223,7 +226,7 @@ namespace Medium_Assignment.API.Controllers
             }
             catch (DbUpdateException ex)
             {
-
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -278,6 +281,7 @@ namespace Medium_Assignment.API.Controllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -290,7 +294,8 @@ namespace Medium_Assignment.API.Controllers
             // Update Department record in DB.
             try {
                 UnitOfWork.Complete();
-            } catch (DbUpdateException) {
+            } catch (DbUpdateException ex) {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -333,6 +338,7 @@ namespace Medium_Assignment.API.Controllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
@@ -343,8 +349,9 @@ namespace Medium_Assignment.API.Controllers
 
                 UnitOfWork.Complete();
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
+                Console.WriteLine(ex);
                 return InternalServerError();
             }
 
